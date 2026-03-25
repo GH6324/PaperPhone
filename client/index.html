@@ -20,13 +20,26 @@
 
   <!-- libsodium (WebAssembly crypto) -->
   <script>
-    window._sodiumPromise = new Promise(resolve => {
+    window._sodiumPromise = new Promise((resolve, reject) => {
+      const timer = setTimeout(() =>
+        reject(new Error('Crypto library load timeout — check network')), 12000);
+
       const s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.13/dist/modules/libsodium-wrappers.min.js';
+      // Use the browser-ready UMD build (not the CJS modules build)
+      s.src = 'https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.13/dist/browsers/sodium.min.js';
+      s.onerror = () => {
+        clearTimeout(timer);
+        reject(new Error('Failed to load crypto library (CDN unreachable)'));
+      };
       s.onload = async () => {
-        await window.sodium.ready;
-        window._sodium = window.sodium;
-        resolve(window.sodium);
+        clearTimeout(timer);
+        try {
+          await window.sodium.ready;
+          window._sodium = window.sodium;
+          resolve(window.sodium);
+        } catch (e) {
+          reject(new Error('Crypto library init failed: ' + e.message));
+        }
       };
       document.head.appendChild(s);
     });
