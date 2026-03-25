@@ -42,11 +42,9 @@ async function ensureBucket() {
 async function uploadFile(objectName, buffer, mimetype) {
   const mc = getMinioClient();
   await mc.putObject(BUCKET, objectName, buffer, buffer.length, { 'Content-Type': mimetype });
-  const endpoint = process.env.MINIO_ENDPOINT || 'localhost';
-  const port = process.env.MINIO_PORT || '9000';
-  const useSSL = process.env.MINIO_USE_SSL === 'true';
-  const proto = useSSL ? 'https' : 'http';
-  return `${proto}://${endpoint}:${port}/${BUCKET}/${objectName}`;
+  // Return a URL served through the app server so it works regardless of MinIO's
+  // network topology (internal service on Zeabur, Docker, etc.)
+  return `/api/files/${objectName}`;
 }
 
 module.exports = { getMinioClient, ensureBucket, uploadFile, BUCKET };

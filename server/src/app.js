@@ -7,6 +7,7 @@ const usersRouter = require('./routes/users');
 const friendsRouter = require('./routes/friends');
 const groupsRouter = require('./routes/groups');
 const uploadRouter = require('./routes/upload');
+const filesRouter  = require('./routes/files');
 const messagesRouter = require('./routes/messages');
 const callsRouter = require('./routes/calls');
 
@@ -25,6 +26,7 @@ app.use('/api/users', usersRouter);
 app.use('/api/friends', friendsRouter);
 app.use('/api/groups', groupsRouter);
 app.use('/api/upload', uploadRouter);
+app.use('/api/files',  filesRouter);
 app.use('/api/messages', messagesRouter);
 app.use('/api/calls', callsRouter);
 
