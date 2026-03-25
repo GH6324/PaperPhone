@@ -299,7 +299,7 @@ spec:
             type: HTTP
         env:
           SERVER_HOST:
-            default: ${CONTAINER_HOSTNAME}
+            default: ${SERVER_HOST}
 
 localization:
   zh-CN:
