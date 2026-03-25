@@ -88,6 +88,9 @@ function buildTabBar(active) {
 
 // ── Navigation ────────────────────────────────────────────────────────────
 export function navigateTo(tab, data) {
+  // Cleanup previous chat listeners
+  const appEl = document.getElementById('app');
+  if (appEl?._cleanup) { appEl._cleanup(); appEl._cleanup = null; }
   state.activeTab = tab;
   state.chatView = null;
   render();
@@ -100,6 +103,9 @@ export function openChat(chat) {
 }
 
 export function goBack() {
+  // Cleanup chat listeners before going back
+  const appEl = document.getElementById('app');
+  if (appEl?._cleanup) { appEl._cleanup(); appEl._cleanup = null; }
   state.chatView = null;
   render();
 }
@@ -146,9 +152,17 @@ function setupGlobalSocketHandlers() {
       const tabBar = root.querySelector('.tabbar');
       if (tabBar) root.replaceChild(buildTabBar(state.activeTab), tabBar);
     } else if (!chat) {
-      // New conversation appeared
-      state.chats.unshift({ id: key, type: msg.group_id ? 'group' : 'private',
-        name: msg.from, avatar: null, lastMsg: '🔒 加密消息', lastTs: msg.ts, unread: 1 });
+      // New conversation — try to find sender in contacts for display name
+      const contact = state.contacts.find(c => c.id === key);
+      state.chats.unshift({
+        id: key,
+        type: msg.group_id ? 'group' : 'private',
+        name: contact ? (contact.nickname || contact.username) : '新消息',
+        avatar: contact?.avatar || null,
+        lastMsg: '🔒 加密消息',
+        lastTs: msg.ts,
+        unread: 1,
+      });
     }
   });
   onEvent('friend_request', () => showToast('收到新的好友请求'));

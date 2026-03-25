@@ -121,15 +121,13 @@ function initWsServer(httpServer) {
           ts: Date.now(),
         };
         const delivered = sendToUser(msg.to, envelope);
-        if (!delivered) {
-          // Store offline
-          const db = getDb();
-          await db.query(
-            `INSERT INTO messages (id, type, from_id, to_id, ciphertext, header, msg_type)
-             VALUES (?, 'private', ?, ?, ?, ?, ?)`,
-            [msgId, ws.userId, msg.to, msg.ciphertext, msg.header || null, msg.msg_type || 'text']
-          );
-        }
+        // Always persist to DB for history; mark delivered immediately if online
+        const db = getDb();
+        await db.query(
+          `INSERT INTO messages (id, type, from_id, to_id, ciphertext, header, msg_type, delivered)
+           VALUES (?, 'private', ?, ?, ?, ?, ?, ?)`,
+          [msgId, ws.userId, msg.to, msg.ciphertext, msg.header || null, msg.msg_type || 'text', delivered ? 1 : 0]
+        );
         // ACK sender
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'ack', msg_id: msgId, ts: Date.now() }));

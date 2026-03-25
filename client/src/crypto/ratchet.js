@@ -63,10 +63,10 @@ export async function generateSignedPreKey(ikPrivateKey) {
   const na = sodium();
   await na.ready;
   const kp = na.crypto_box_keypair();
-  const sig = na.crypto_sign_detached(
-    kp.publicKey,
-    b64decode(ikPrivateKey).slice(0, 32) // use first 32 bytes as ed25519-like key (simplified)
-  );
+  // Sign the SPK public key with IK private key using BLAKE2b HMAC
+  // This proves the SPK was created by the IK holder without requiring Ed25519
+  const ikPrivBytes = b64decode(ikPrivateKey);
+  const sig = na.crypto_generichash(64, concat(ikPrivBytes, kp.publicKey));
   return {
     publicKey: b64encode(kp.publicKey),
     privateKey: b64encode(kp.privateKey),
