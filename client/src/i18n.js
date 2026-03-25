@@ -123,6 +123,15 @@ const TRANSLATIONS = {
     callBusy: '当前已有通话进行中',
     callMediaFailed: '无法访问摄像头/麦克风',
     unknownCaller: '未知来电',
+    // Moments
+    cancel: '取消',
+    newMoment: '发动态',
+    publish: '发布',
+    addPhoto: '添加图片',
+    noMoments: '暂无动态，快去发布吧',
+    momentPlaceholder: '这一刻，想和大家分享什么...',
+    deleteConfirm: '确认删除？',
+    sendMoment: '发布中...',
   },
 
   en: {
@@ -236,6 +245,15 @@ const TRANSLATIONS = {
     callBusy: 'Already in a call',
     callMediaFailed: 'Cannot access camera/mic',
     unknownCaller: 'Unknown Caller',
+    // Moments
+    cancel: 'Cancel',
+    newMoment: 'New Post',
+    publish: 'Post',
+    addPhoto: 'Add Photo',
+    noMoments: 'No posts yet — share something!',
+    momentPlaceholder: "What's on your mind?",
+    deleteConfirm: 'Delete this post?',
+    sendMoment: 'Posting...',
   },
 
   ja: {
@@ -349,6 +367,15 @@ const TRANSLATIONS = {
     callBusy: '通話中です',
     callMediaFailed: 'カメラ/マイクにアクセスできません',
     unknownCaller: '不明の発信者',
+    // Moments
+    cancel: 'キャンセル',
+    newMoment: '投稿する',
+    publish: '投稿',
+    addPhoto: '写真を追加',
+    noMoments: '投稿がありません',
+    momentPlaceholder: '今どんな気持ち？',
+    deleteConfirm: 'この投稿を削除しますか？',
+    sendMoment: '投稿中...',
   },
 
   ko: {
@@ -462,6 +489,15 @@ const TRANSLATIONS = {
     callBusy: '이미 통화 중입니다',
     callMediaFailed: '카메라/마이크에 접근할 수 없습니다',
     unknownCaller: '알 수 없는 전화',
+    // Moments
+    cancel: '취소',
+    newMoment: '게시하기',
+    publish: '게시',
+    addPhoto: '사진 추가',
+    noMoments: '아직 게시물이 없습니다',
+    momentPlaceholder: '무슨 생각을 하고 있나요?',
+    deleteConfirm: '이 게시물을 삭제하시겠어요?',
+    sendMoment: '게시 중...',
   },
 
   fr: {
@@ -575,6 +611,15 @@ const TRANSLATIONS = {
     callBusy: 'Déjà en appel',
     callMediaFailed: 'Impossible d\'accéder à la caméra/mic',
     unknownCaller: 'Appelant inconnu',
+    // Moments
+    cancel: 'Annuler',
+    newMoment: 'Nouvelle publication',
+    publish: 'Publier',
+    addPhoto: 'Ajouter une photo',
+    noMoments: 'Aucune publication — partagez quelque chose !',
+    momentPlaceholder: 'Quoi de neuf ?',
+    deleteConfirm: 'Supprimer cette publication ?',
+    sendMoment: 'Publication...',
   },
 };
 

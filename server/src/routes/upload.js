@@ -1,5 +1,8 @@
 /**
  * Upload route — stores files in Cloudflare R2 (S3-compatible)
+ * Always returns a server-relative URL /api/files/:objectName
+ * so that files.js can proxy from R2 (or disk fallback) on demand.
+ *
  * POST /api/upload
  */
 const express = require('express');
@@ -7,7 +10,7 @@ const multer = require('multer');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const { authMiddleware } = require('../middlewares/auth');
-const { uploadFile } = require('../db/r2');
+const { putObject } = require('../db/r2');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -29,8 +32,11 @@ router.post('/', upload.single('file'), async (req, res, next) => {
 
     const ext = path.extname(req.file.originalname) || '';
     const objectName = `${uuidv4()}${ext}`;
-    const url = await uploadFile(objectName, req.file.buffer, req.file.mimetype);
 
+    await putObject(objectName, req.file.buffer, req.file.mimetype);
+
+    // Always return a stable relative URL — files.js proxies to R2 or disk
+    const url = `/api/files/${objectName}`;
     res.json({ url, name: req.file.originalname, size: req.file.size, type: req.file.mimetype });
   } catch (err) { next(err); }
 });
