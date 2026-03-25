@@ -35,8 +35,12 @@ router.post('/', upload.single('file'), async (req, res, next) => {
 
     await putObject(objectName, req.file.buffer, req.file.mimetype);
 
-    // Always return a stable relative URL — files.js proxies to R2 or disk
-    const url = `/api/files/${objectName}`;
+    // If a public CDN URL is configured, return it directly (stored in DB, no proxy needed)
+    const base = process.env.R2_PUBLIC_URL;
+    const url = base
+      ? `${base.replace(/\/$/, '')}/${objectName}`
+      : `/api/files/${objectName}`;
+
     res.json({ url, name: req.file.originalname, size: req.file.size, type: req.file.mimetype });
   } catch (err) { next(err); }
 });
