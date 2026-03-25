@@ -1,11 +1,11 @@
 /**
- * Chat Window — i18n v2 + full E2E encryption
+ * Chat Window — i18n v2 + E2EE v2 (stateless per-message ECDH)
  */
 import { state, avatarEl, goBack, showToast, formatTime } from '../app.js';
 import { api } from '../api.js';
 import { send, onEvent, offEvent } from '../socket.js';
-import { getKey, setKey } from '../crypto/keystore.js';
-import { x3dhSend, x3dhReceive, ratchetInit, ratchetEncrypt, ratchetDecrypt } from '../crypto/ratchet.js';
+import { getKey } from '../crypto/keystore.js';
+import { encryptMessage, decryptMessage } from '../crypto/ratchet.js';
 import { t } from '../i18n.js';
 import { callManager } from '../services/webrtc.js';
 
@@ -104,11 +104,38 @@ export async function renderChat(root, chat) {
   `;
   root.appendChild(toolbar);
 
-  // ── Session state ─────────────────────────────────────────────
-  let ratchetState = await getKey(`session_${chat.id}`);
+  // ── Crypto: load my identity key + recipient's bundle (lazily) ────────────
+  let myIK = null;         // my identity key (with privateKey)
+  let recipientIkPub = null; // cached recipient public key
+
+  async function loadMyKey() {
+    if (myIK) return myIK;
+    myIK = await getKey('ik');
+    if (!myIK) throw new Error(t('noKey'));
+    return myIK;
+  }
+
+  async function loadRecipientKey() {
+    if (recipientIkPub) return recipientIkPub;
+    const { ik_pub } = await api.identityKey(chat.id);
+    if (!ik_pub) throw new Error('Recipient has no public key registered');
+    recipientIkPub = ik_pub;
+    return recipientIkPub;
+  }
+
+  // ── Decrypt helper (stateless) ────────────────────────────────────────────
+  async function tryDecrypt(ciphertext, headerStr) {
+    try {
+      const ik = await loadMyKey();
+      const h = typeof headerStr === 'string' ? JSON.parse(headerStr) : headerStr;
+      return await decryptMessage(ik, h, ciphertext);
+    } catch {
+      return null;
+    }
+  }
 
   // ── Render bubble ─────────────────────────────────────────────
-  let _msgIdMap = {};  // msgId -> row element (for ack updates)
+  let _msgIdMap = {};
 
   function addBubble(text, fromMe, ts, msgType = 'text', extra = {}) {
     const row = document.createElement('div');
@@ -144,7 +171,6 @@ export async function renderChat(root, chat) {
 
     row.appendChild(bubble);
 
-    // Timestamp + status
     const timeEl = document.createElement('div');
     timeEl.className = `bubble-ts${fromMe ? ' bubble-ts-out' : ''}`;
     const d = ts ? new Date(ts) : new Date();
@@ -170,75 +196,46 @@ export async function renderChat(root, chat) {
 
     for (const row of history) {
       const fromMe = row.from_id === state.user.id;
-      let text = row.ciphertext;
-      
-      if (chat.type === 'private') {
-        text = t('encryptedMsg');
-        if (!fromMe) {
-          if (row.header && (!ratchetState || !ratchetState.DHr)) {
-            try {
-              const h = JSON.parse(row.header);
-              const ik = await getKey('ik');
-              const spk = await getKey('spk');
-              if (ik && spk) {
-                const sharedSecret = await x3dhReceive({ ik, spk }, h);
-                ratchetState = await ratchetInit(sharedSecret, 'receiver');
-                ratchetState.DHr = h.dh || null;
-              }
-            } catch {}
-          }
-          if (ratchetState) {
-            try {
-              const h = row.header ? JSON.parse(row.header) : {};
-              const res = await ratchetDecrypt(ratchetState, row.ciphertext, h);
-              text = res.plaintext;
-              ratchetState = res.newState;
-            } catch {}
-          }
+      let text = t('encryptedMsg');
+      let extra = {};
+
+      if (chat.type === 'private' && !fromMe && row.header) {
+        // Only decrypt messages sent TO me (from the other person)
+        const plain = await tryDecrypt(row.ciphertext, row.header);
+        if (plain !== null) {
+          text = plain;
+          if (['image', 'voice', 'file'].includes(row.msg_type)) extra = { url: text };
         }
+      } else if (fromMe) {
+        // For my own sent messages: we don't store the plaintext locally,
+        // but we can show the ciphertext won't decrypt — show a visual placeholder
+        // that still indicates it was sent. The bubble text is already shown
+        // optimistically when the message is sent.
+        text = t('encryptedMsg');
       }
-      // Provide url from decrypted text for media
-      const extra = ['image', 'voice', 'file'].includes(row.msg_type) ? { url: text } : {};
+
       addBubble(text, fromMe, row.created_at, row.msg_type, extra);
     }
-    if (ratchetState) await setKey(`session_${chat.id}`, ratchetState);
-  } catch {}
-
-  // ── Init session ──────────────────────────────────────────────
-  async function ensureSession() {
-    if (ratchetState || chat.type !== 'private') return true;
-    try {
-      await window._sodiumPromise;
-      const bundle = await api.prekeys(chat.id);
-      const ik = await getKey('ik');
-      if (!ik) throw new Error(t('noKey'));
-      const { sharedSecret, header: x3dhHeader } = await x3dhSend(ik, bundle);
-      ratchetState = await ratchetInit(sharedSecret, 'sender');
-      ratchetState._x3dhHeader = x3dhHeader;
-      await setKey(`session_${chat.id}`, ratchetState);
-      return true;
-    } catch (err) {
-      showToast(t('sessionFailed') + ': ' + err.message);
-      return false;
-    }
-  }
+  } catch (e) { /* ignore load errors */ }
 
   // ── Send message ──────────────────────────────────────────────
   async function sendMessage(text, msgType = 'text', extra = {}) {
-    if (!text.trim() && msgType === 'text') return;
-    const sessionOk = await ensureSession();
-    if (!sessionOk && chat.type === 'private') return;
+    if (msgType === 'text' && !text.trim()) return;
 
-    let ciphertext = text, header = null, msgId = crypto.randomUUID();
-    if (ratchetState) {
+    let ciphertext = text;
+    let header = null;
+    const msgId = crypto.randomUUID();
+
+    if (chat.type === 'private') {
       try {
-        const res = await ratchetEncrypt(ratchetState, text);
+        const ikPub = await loadRecipientKey();
+        const res = await encryptMessage(ikPub, text);
         ciphertext = res.ciphertext;
-        header = JSON.stringify({ ...res.header, ...(ratchetState._x3dhHeader || {}) });
-        ratchetState = res.newState;
-        ratchetState._x3dhHeader = null;
-        await setKey(`session_${chat.id}`, ratchetState);
-      } catch (err) { showToast(t('encFailed') + ': ' + err.message); return; }
+        header = JSON.stringify(res.header);
+      } catch (err) {
+        showToast(t('encFailed') + ': ' + err.message);
+        return; // Never send plaintext
+      }
     }
 
     addBubble(text, true, Date.now(), msgType, { msgId, ...extra });
@@ -266,7 +263,6 @@ export async function renderChat(root, chat) {
     const hasText = !!inputEl.value.trim();
     sendBtn.classList.toggle('hidden', !hasText);
     emojiBtn.classList.toggle('hidden', hasText);
-    // Send typing indicator (debounced)
     clearTimeout(inputEl._typingTimer);
     if (hasText) {
       send({ type: 'typing',
@@ -343,13 +339,9 @@ export async function renderChat(root, chat) {
 
   // Emoji picker
   const EMOJIS = [
-    // Smileys
     '😊','😂','🥰','😎','😭','😅','😇','🤣','😍','😘','🥳','😁','🤗','😜','🤩','🥺',
-    // Gestures / People
     '👍','👎','👏','🙌','🙏','💪','🤝','✌️','🤙','🫶','❤️','💔','💕','💯','🔥','✨',
-    // Objects / Nature
     '🎉','🎊','🎁','🎈','🎶','🎵','📸','💡','🌟','⭐','🌈','☀️','🌙','❄️','🍕','🍜',
-    // Symbols
     '😈','👻','🤖','💩','🐱','🐶','🌸','🌺','🍀','🦋','💎','🚀','⚡','🌊','🏆','🎯',
   ];
   const EMOJI_LABELS = ['😊', '👍', '🎉', '😈'];
@@ -357,7 +349,6 @@ export async function renderChat(root, chat) {
   emojiBtn.addEventListener('click', () => {
     if (emojiPanel) { emojiPanel.remove(); emojiPanel = null; return; }
     emojiPanel = document.createElement('div');
-    // Toolbar is at the bottom; place the panel just above it
     const toolbarRect = toolbar.getBoundingClientRect();
     emojiPanel.style.cssText = `
       position:fixed;
@@ -371,7 +362,6 @@ export async function renderChat(root, chat) {
       max-height:180px;
       overflow-y:auto;
     `;
-    // Category tabs (simple labels)
     const cats = document.createElement('div');
     cats.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;overflow-x:auto;';
     const all = ['all', ...EMOJI_LABELS];
@@ -407,41 +397,27 @@ export async function renderChat(root, chat) {
     const matchId = msg.group_id || msg.from;
     if (matchId !== chat.id) return;
 
-    let text = msg.ciphertext;
-    if (chat.type === 'private') {
-      text = t('encryptedMsg');
-      if (msg.header && (!ratchetState || !ratchetState.DHr)) {
-        try {
-          const h = JSON.parse(msg.header);
-          const ik = await getKey('ik');
-          const spk = await getKey('spk');
-          if (ik && spk) {
-            const sharedSecret = await x3dhReceive({ ik, spk }, h);
-            ratchetState = await ratchetInit(sharedSecret, 'receiver');
-            ratchetState.DHr = h.dh || null;
-            await setKey(`session_${chat.id}`, ratchetState);
-          }
-        } catch {}
-      }
-      if (ratchetState && msg.ciphertext) {
-        try {
-          const h = msg.header ? JSON.parse(msg.header) : {};
-          const res = await ratchetDecrypt(ratchetState, msg.ciphertext, h);
-          text = res.plaintext;
-          ratchetState = res.newState;
-          await setKey(`session_${chat.id}`, ratchetState);
-        } catch {}
+    let text = msg.ciphertext; // fallback: show raw for groups
+    let extra = {};
+
+    if (chat.type === 'private' && msg.header && msg.ciphertext) {
+      const plain = await tryDecrypt(msg.ciphertext, msg.header);
+      if (plain !== null) {
+        text = plain;
+        if (['image', 'voice', 'file'].includes(msg.msg_type)) extra = { url: text };
+      } else {
+        text = t('encryptedMsg');
       }
     }
-    addBubble(text, false, msg.ts, msg.msg_type || 'text');
-    // Update chat list last message time
+
+    addBubble(text, false, msg.ts, msg.msg_type || 'text', extra);
     const c = state.chats.find(s => s.id === chat.id);
     if (c) c.lastTs = msg.ts;
   }
 
   onEvent('message', handleIncoming);
 
-  // Handle ack — mark message as delivered
+  // Handle ack
   onEvent('ack', ({ msg_id }) => {
     const statusEl = document.querySelector(`[data-ack-id="${CSS.escape(msg_id)}"]`);
     if (statusEl) {

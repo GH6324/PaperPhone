@@ -117,13 +117,13 @@ export function renderLogin(root) {
 
         if (isRegister) {
           data = await api.register({ username, nickname, password, ...keysPayload });
+          setToken(data.token);
         } else {
           data = await api.login({ username, password });
           setToken(data.token);
           await api.uploadKeys(keysPayload);
         }
 
-        setToken(data.token);
         state.user = data.user;
         connect();
         window.location.reload();

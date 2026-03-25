@@ -44,6 +44,7 @@ export const api = {
   updateMe:    d   => req('PATCH', '/api/users/me', d),
   search:      q   => req('GET',   `/api/users/search?q=${encodeURIComponent(q)}`),
   prekeys:     uid => req('GET',   `/api/users/${uid}/prekeys`),
+  identityKey: uid => req('GET',   `/api/users/${uid}/ik`),
   uploadOPKs:  d   => req('POST',  '/api/users/prekeys', d),
   uploadKeys:  d   => req('PUT',   '/api/users/keys', d),
 

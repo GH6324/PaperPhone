@@ -46,6 +46,20 @@ router.patch('/me', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET /api/users/:id/ik — fetch identity public key (no OPK consumed)
+router.get('/:id/ik', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const [rows] = await db.query(
+      'SELECT ik_pub FROM users WHERE id = ?',
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'User not found' });
+    if (!rows[0].ik_pub) return res.status(404).json({ error: 'User has no public key' });
+    res.json({ ik_pub: rows[0].ik_pub });
+  } catch (err) { next(err); }
+});
+
 // GET /api/users/:id/prekeys — fetch X3DH prekey bundle for E2E handshake
 router.get('/:id/prekeys', async (req, res, next) => {
   try {

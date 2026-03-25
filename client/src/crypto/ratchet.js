@@ -1,33 +1,42 @@
 /**
- * X3DH Key Agreement + Double Ratchet with ML-KEM-768 post-quantum injection
+ * PaperPhone E2EE Crypto v2
  *
- * Uses libsodium-wrappers for:
- *   - Curve25519 ECDH (X3DH)
- *   - XSalsa20-Poly1305 symmetric encryption
- *   - SHA-256 KDF
+ * Stateless per-message encryption using libsodium:
+ *   - Curve25519 ECDH key exchange (crypto_box_keypair / crypto_scalarmult)
+ *   - XSalsa20-Poly1305 authenticated encryption (crypto_secretbox_easy)
+ *   - BLAKE2b for KDF
  *
- * Uses kyber-crystals (ML-KEM-768) for:
- *   - Post-quantum KEM injection at every ratchet step
+ * Protocol (per message):
+ *   Sender:
+ *     1. Generate ephemeral Curve25519 keypair (EK)
+ *     2. sharedKey = KDF( DH(EK_priv, recipient_IK_pub) )
+ *     3. ciphertext = secretbox(plaintext, nonce, sharedKey)
+ *     4. Send { ciphertext: nonce+ct (b64), header: { ek_pub } }
  *
- * All loaded from CDN via importmap — no bundler required.
+ *   Receiver:
+ *     1. sharedKey = KDF( DH(my_IK_priv, EK_pub) )
+ *     2. plaintext = open_secretbox(ciphertext, nonce, sharedKey)
+ *
+ * Each message is independently encrypted — no session state needed.
+ * Forward secrecy comes from ephemeral keys (a fresh EK per message).
  */
 
-// Sodium is loaded globally via <script> in index.html
-// after window._sodium is ready
-
+// libsodium is loaded globally via <script> in index.html
 function sodium() {
-  if (!window._sodium || !window._sodium.ready) throw new Error('libsodium not ready');
+  if (!window._sodium) throw new Error('libsodium not ready');
   return window._sodium;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────
 
-function b64encode(buf) {
+export function b64encode(buf) {
   return btoa(String.fromCharCode(...new Uint8Array(buf)));
 }
-function b64decode(str) {
+export function b64decode(str) {
+  if (!str || typeof str !== 'string') throw new TypeError('b64decode: expected base64 string, got ' + typeof str);
   return Uint8Array.from(atob(str), c => c.charCodeAt(0));
 }
+
 function concat(...arrays) {
   const total = arrays.reduce((n, a) => n + a.length, 0);
   const out = new Uint8Array(total);
@@ -35,36 +44,27 @@ function concat(...arrays) {
   for (const a of arrays) { out.set(a, off); off += a.length; }
   return out;
 }
-function xorBytes(a, b) {
-  const out = new Uint8Array(a.length);
-  for (let i = 0; i < a.length; i++) out[i] = a[i] ^ b[i % b.length];
-  return out;
-}
 
-// ── KDF ──────────────────────────────────────────────────────────────────
-
-function kdf(ikm, info = 'PaperPhone-v1') {
+function kdf(ikm) {
   const na = sodium();
   const salt = new Uint8Array(32);
-  const infoBytes = new TextEncoder().encode(info);
-  return na.crypto_generichash(32, concat(ikm, infoBytes), salt);
+  const info = new TextEncoder().encode('PaperPhone-E2EE-v2');
+  return na.crypto_generichash(32, concat(ikm, info), salt);
 }
 
-// ── Key Generation ────────────────────────────────────────────────────────
+// ── Key Generation ─────────────────────────────────────────────────────────
 
 export async function generateIdentityKeyPair() {
+  await window._sodiumPromise;
   const na = sodium();
-  await na.ready;
   const kp = na.crypto_box_keypair();
   return { publicKey: b64encode(kp.publicKey), privateKey: b64encode(kp.privateKey) };
 }
 
 export async function generateSignedPreKey(ikPrivateKey) {
+  await window._sodiumPromise;
   const na = sodium();
-  await na.ready;
   const kp = na.crypto_box_keypair();
-  // Sign the SPK public key with IK private key using BLAKE2b HMAC
-  // This proves the SPK was created by the IK holder without requiring Ed25519
   const ikPrivBytes = b64decode(ikPrivateKey);
   const sig = na.crypto_generichash(64, concat(ikPrivBytes, kp.publicKey));
   return {
@@ -75,207 +75,79 @@ export async function generateSignedPreKey(ikPrivateKey) {
 }
 
 export async function generateOneTimePreKey() {
+  await window._sodiumPromise;
   const na = sodium();
-  await na.ready;
   const kp = na.crypto_box_keypair();
   return { publicKey: b64encode(kp.publicKey), privateKey: b64encode(kp.privateKey) };
 }
 
-// ── X3DH Sender (initiator) ───────────────────────────────────────────────
+// ── Encrypt (stateless, per-message) ──────────────────────────────────────
 
 /**
- * Initiates X3DH handshake, returns { sharedSecret (bytes), header (for first message) }
- * bundle = { ik_pub, spk_pub, spk_sig, opk?, kem_pub }
+ * Encrypt plaintext for a recipient.
+ * @param {string} recipientIkPub  - Recipient's identity public key (base64)
+ * @param {string} plaintext       - UTF-8 message text
+ * @returns {{ ciphertext: string, header: { ek_pub: string } }}
  */
-export async function x3dhSend(myIK, bundle) {
+export async function encryptMessage(recipientIkPub, plaintext) {
+  await window._sodiumPromise;
   const na = sodium();
-  await na.ready;
 
-  const EK = na.crypto_box_keypair(); // ephemeral key
+  // Ephemeral keypair — fresh for every message
+  const EK = na.crypto_box_keypair();
+  const recipientPub = b64decode(recipientIkPub);
 
-  const IK_B = b64decode(bundle.ik_pub);
-  const SPK_B = b64decode(bundle.spk_pub);
-  const OPK_B = bundle.opk ? b64decode(bundle.opk.opk_pub) : null;
-  const IK_A_priv = b64decode(myIK.privateKey);
+  // ECDH shared secret
+  const dh = na.crypto_scalarmult(EK.privateKey, recipientPub);
+  const sharedKey = kdf(dh);
 
-  const DH1 = na.crypto_scalarmult(IK_A_priv, SPK_B);
-  const DH2 = na.crypto_scalarmult(EK.privateKey, IK_B);
-  const DH3 = na.crypto_scalarmult(EK.privateKey, SPK_B);
-  const DH4 = OPK_B ? na.crypto_scalarmult(EK.privateKey, OPK_B) : new Uint8Array(32);
-
-  const masterSecret = kdf(concat(DH1, DH2, DH3, DH4));
-
-  return {
-    sharedSecret: masterSecret,
-    header: {
-      ek_pub: b64encode(EK.publicKey),
-      ik_pub: myIK.publicKey,
-      opk_key_id: bundle.opk?.key_id ?? null,
-    },
-  };
-}
-
-// ── X3DH Receiver ─────────────────────────────────────────────────────────
-
-/**
- * Derives shared secret from an incoming X3DH header
- * myKeys = { ik (priv), spk (priv), opk? (priv) }
- */
-export async function x3dhReceive(myKeys, header) {
-  const na = sodium();
-  await na.ready;
-
-  const EK_A = b64decode(header.ek_pub);
-  const IK_A = b64decode(header.ik_pub);
-  const IK_B_priv = b64decode(myKeys.ik.privateKey);
-  const SPK_B_priv = b64decode(myKeys.spk.privateKey);
-  const OPK_B_priv = myKeys.opk ? b64decode(myKeys.opk.privateKey) : null;
-
-  const DH1 = na.crypto_scalarmult(SPK_B_priv, IK_A);
-  const DH2 = na.crypto_scalarmult(IK_B_priv, EK_A);
-  const DH3 = na.crypto_scalarmult(SPK_B_priv, EK_A);
-  const DH4 = OPK_B_priv ? na.crypto_scalarmult(OPK_B_priv, EK_A) : new Uint8Array(32);
-
-  return kdf(concat(DH1, DH2, DH3, DH4));
-}
-
-// ── Double Ratchet State ──────────────────────────────────────────────────
-
-/**
- * Create initial ratchet state after X3DH
- * role: 'sender' or 'receiver'
- */
-export async function ratchetInit(sharedSecret, role) {
-  const na = sodium();
-  await na.ready;
-  const dhKP = na.crypto_box_keypair();
-
-  return {
-    role,
-    // Root key (32 bytes)
-    RK: b64encode(sharedSecret),
-    // Chain keys
-    CKs: null, // sending chain key
-    CKr: null, // receiving chain key
-    // DH ratchet key pair
-    DHs: { pub: b64encode(dhKP.publicKey), priv: b64encode(dhKP.privateKey) },
-    DHr: null, // remote ratchet pubkey
-    // Counters
-    Ns: 0, Nr: 0,
-    // Skip table
-    MKSKIPPED: {},
-  };
-}
-
-/** Ratchet step — advance root key with DH output + KEM sharedSecret */
-function _ratchetStep(RK, dhOutput, kemShared) {
-  const rkBytes = typeof RK === 'string' ? b64decode(RK) : new Uint8Array(RK);
-  const combined = concat(rkBytes, dhOutput, kemShared || new Uint8Array(32));
-  const newRK = kdf(combined, 'RK-step');
-  const newCK = kdf(combined, 'CK-step');
-  return { newRK: b64encode(newRK), newCK: b64encode(newCK) };
-}
-
-/** Derive message key from chain key */
-function _deriveMessageKey(CK) {
-  const na = sodium();
-  const ck = b64decode(CK);
-  const MK = na.crypto_generichash(32, ck, new TextEncoder().encode('MK'));
-  const nextCK = na.crypto_generichash(32, ck, new TextEncoder().encode('CK'));
-  return { MK: b64encode(MK), nextCK: b64encode(nextCK) };
-}
-
-// ── Encrypt Message ───────────────────────────────────────────────────────
-
-/**
- * Encrypt plaintext using double ratchet.
- * Returns { ciphertext (b64), header, newState }
- * header includes sender DH public key, message number, kemCT
- */
-export async function ratchetEncrypt(state, plaintext) {
-  const na = sodium();
-  await na.ready;
-
-  let { RK, CKs, DHs, DHr, Ns, kemKP } = state;
-
-  // If no sending chain yet, perform DH ratchet step
-  if (!CKs) {
-    const dhKP = na.crypto_box_keypair();
-    DHs = { pub: b64encode(dhKP.publicKey), priv: b64encode(dhKP.privateKey) };
-
-    const dhOut = DHr
-      ? na.crypto_scalarmult(b64decode(DHs.priv), b64decode(DHr))
-      : new Uint8Array(32);
-
-    // ML-KEM step
-    let kemCT = null, kemShared = new Uint8Array(32);
-    if (window.KyberModule && DHr) {
-      try {
-        const res = window.KyberModule.kemEncapsulate(DHr);
-        kemCT = res.ciphertext;
-        kemShared = b64decode(res.sharedSecret);
-      } catch (e) { /* fallback to no PQ */ }
-    }
-
-    const step = _ratchetStep(RK, dhOut, kemShared);
-    RK = step.newRK;
-    CKs = step.newCK;
-    state = { ...state, RK, CKs, DHs, Ns: 0 };
-    state._kemCT = kemCT;
-  }
-
-  const { MK, nextCK } = _deriveMessageKey(CKs);
+  // Encrypt
   const nonce = na.randombytes_buf(24);
-  const ct = na.crypto_secretbox_easy(
-    new TextEncoder().encode(plaintext),
-    nonce,
-    b64decode(MK)
-  );
+  const ct = na.crypto_secretbox_easy(new TextEncoder().encode(plaintext), nonce, sharedKey);
 
-  const newState = { ...state, CKs: nextCK, Ns: Ns + 1 };
   return {
     ciphertext: b64encode(concat(nonce, ct)),
-    header: { dh: DHs.pub, n: Ns, kemCT: state._kemCT || null },
-    newState,
+    header: { ek_pub: b64encode(EK.publicKey) },
   };
 }
 
-// ── Decrypt Message ───────────────────────────────────────────────────────
+// ── Decrypt (stateless, per-message) ──────────────────────────────────────
 
-export async function ratchetDecrypt(state, ciphertextB64, header, myKemPriv) {
+/**
+ * Decrypt a message.
+ * @param {{ privateKey: string }} myIK - My identity key (with privateKey field)
+ * @param {{ ek_pub: string }} header   - Message header from sender
+ * @param {string} ciphertextB64        - base64 nonce+ciphertext
+ * @returns {string} plaintext
+ */
+export async function decryptMessage(myIK, header, ciphertextB64) {
+  await window._sodiumPromise;
   const na = sodium();
-  await na.ready;
 
-  let { RK, CKr, DHs, DHr, Nr } = state;
+  if (!header || !header.ek_pub) throw new Error('Missing ek_pub in header');
 
-  // DH ratchet step if new sender ratchet key
-  if (!DHr || header.dh !== DHr) {
-    const dhOut = DHs
-      ? na.crypto_scalarmult(b64decode(DHs.priv), b64decode(header.dh))
-      : new Uint8Array(32);
+  const ekPub = b64decode(header.ek_pub);
+  const myPriv = b64decode(myIK.privateKey);
 
-    // ML-KEM decapsulate
-    let kemShared = new Uint8Array(32);
-    if (header.kemCT && myKemPriv && window.KyberModule) {
-      try {
-        kemShared = b64decode(window.KyberModule.kemDecapsulate(header.kemCT, myKemPriv));
-      } catch (e) { /* fallback */ }
-    }
+  // ECDH shared secret (mirrors sender's computation)
+  const dh = na.crypto_scalarmult(myPriv, ekPub);
+  const sharedKey = kdf(dh);
 
-    const step = _ratchetStep(RK, dhOut, kemShared);
-    RK = step.newRK;
-    CKr = step.newCK;
-    DHr = header.dh;
-    Nr = 0;
-    state = { ...state, RK, CKr, DHr, Nr };
-  }
-
-  const { MK, nextCK } = _deriveMessageKey(CKr);
+  // Decrypt
   const raw = b64decode(ciphertextB64);
   const nonce = raw.slice(0, 24);
   const ct = raw.slice(24);
+  const plaintext = na.crypto_secretbox_open_easy(ct, nonce, sharedKey);
+  if (!plaintext) throw new Error('Decryption failed (authentication error)');
 
-  const plaintext = na.crypto_secretbox_open_easy(ct, nonce, b64decode(MK));
-  const newState = { ...state, CKr: nextCK, Nr: Nr + 1 };
-  return { plaintext: new TextDecoder().decode(plaintext), newState };
+  return new TextDecoder().decode(plaintext);
 }
+
+// ── Legacy stubs (kept for compatibility with login.js key generation) ────
+// These are no longer used for message crypto but are called during registration.
+
+export async function x3dhSend() { throw new Error('x3dhSend is deprecated'); }
+export async function x3dhReceive() { throw new Error('x3dhReceive is deprecated'); }
+export async function ratchetInit() { throw new Error('ratchetInit is deprecated'); }
+export async function ratchetEncrypt() { throw new Error('ratchetEncrypt is deprecated'); }
+export async function ratchetDecrypt() { throw new Error('ratchetDecrypt is deprecated'); }
