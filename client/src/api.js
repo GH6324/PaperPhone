@@ -74,6 +74,10 @@ export const api = {
 export const WS_URL = (() => {
   const loc = window.location;
   const proto = loc.protocol === 'https:' ? 'wss' : 'ws';
-  const port  = (loc.port === '8080' || loc.port === '5173') ? '3000' : loc.port;
-  return `${proto}://${loc.hostname}:${port}`;
+  // Dev: direct to backend port 3000
+  if (loc.port === '8080' || loc.port === '5173') {
+    return `${proto}://${loc.hostname}:3000`;
+  }
+  // Production: same origin via nginx /ws proxy
+  return `${proto}://${loc.host}/ws`;
 })();

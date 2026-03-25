@@ -9,6 +9,7 @@ import { renderChats } from './pages/chats.js';
 import { renderContacts } from './pages/contacts.js';
 import { renderDiscover } from './pages/discover.js';
 import { renderProfile } from './pages/profile.js';
+import { t, onLangChange } from './i18n.js';
 
 // ── Global State ──────────────────────────────────────────────────────────
 export const state = {
@@ -53,8 +54,8 @@ function nameColor(name) { return COLORS[(name || '').charCodeAt(0) % COLORS.len
 export function formatTime(ts) {
   const d = new Date(ts), now = new Date();
   const diff = now - d;
-  if (diff < 60e3) return '刚刚';
-  if (diff < 3600e3) return `${Math.floor(diff / 60e3)}分钟前`;
+  if (diff < 60e3) return '< 1m';
+  if (diff < 3600e3) return `${Math.floor(diff / 60e3)}m`;
   if (d.toDateString() === now.toDateString()) return d.toTimeString().slice(0, 5);
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
@@ -62,10 +63,10 @@ export function formatTime(ts) {
 // ── Tab Bar ───────────────────────────────────────────────────────────────
 function buildTabBar(active) {
   const tabs = [
-    { id: 'chats',    label: '微信',  icon: chatIcon() },
-    { id: 'contacts', label: '通讯录', icon: contactIcon() },
-    { id: 'discover', label: '发现',  icon: discoverIcon() },
-    { id: 'me',       label: '我',   icon: meIcon() },
+    { id: 'chats',    label: t('tabChats'),    icon: chatIcon() },
+    { id: 'contacts', label: t('tabContacts'), icon: contactIcon() },
+    { id: 'discover', label: t('tabDiscover'), icon: discoverIcon() },
+    { id: 'me',       label: t('tabMe'),       icon: meIcon() },
   ];
   const bar = document.createElement('nav');
   bar.className = 'tabbar';
@@ -73,13 +74,14 @@ function buildTabBar(active) {
     const item = document.createElement('div');
     item.className = `tab-item ${tab.id === active ? 'active' : ''}`;
     item.id = `tab-${tab.id}`;
+    const totalUnread = state.chats.reduce((n, c) => n + (c.unread || 0), 0);
     item.innerHTML = `
-      <div class="tab-icon-wrap">
+      <div class="tab-icon">
         ${tab.icon}
-        ${tab.id === 'chats' && state.chats.some(c => c.unread > 0)
-          ? `<div class="tab-dot">${state.chats.reduce((n, c) => n + (c.unread || 0), 0)}</div>` : ''}
+        ${tab.id === 'chats' && totalUnread > 0
+          ? `<div class="tab-badge">${totalUnread > 99 ? '99+' : totalUnread}</div>` : ''}
       </div>
-      <span>${tab.label}</span>`;
+      <span class="tab-label">${tab.label}</span>`;
     item.addEventListener('click', () => navigateTo(tab.id));
     bar.appendChild(item);
   });
@@ -146,7 +148,7 @@ function setupGlobalSocketHandlers() {
     const chat = state.chats.find(c => c.id === key);
     if (chat && state.chatView?.id !== key) {
       chat.unread = (chat.unread || 0) + 1;
-      chat.lastMsg = '🔒 加密消息';
+      chat.lastMsg = t('encryptedMsg');
       chat.lastTs = msg.ts;
       // re-render tab dot
       const tabBar = root.querySelector('.tabbar');
@@ -157,16 +159,16 @@ function setupGlobalSocketHandlers() {
       state.chats.unshift({
         id: key,
         type: msg.group_id ? 'group' : 'private',
-        name: contact ? (contact.nickname || contact.username) : '新消息',
+        name: contact ? (contact.nickname || contact.username) : t('newMessage'),
         avatar: contact?.avatar || null,
-        lastMsg: '🔒 加密消息',
+        lastMsg: t('encryptedMsg'),
         lastTs: msg.ts,
         unread: 1,
       });
     }
   });
-  onEvent('friend_request', () => showToast('收到新的好友请求'));
-  onEvent('friend_accepted', () => { showToast('好友请求已接受'); });
+  onEvent('friend_request', () => showToast(t('newFriendRequest')));
+  onEvent('friend_accepted', () => showToast(t('friendAccepted')));
 }
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────
@@ -199,6 +201,14 @@ async function init() {
 }
 
 init();
+
+// Re-render tabs when language changes (if not in chat view)
+onLangChange(() => {
+  if (state.user && !state.chatView) {
+    const tabBar = root.querySelector('.tabbar');
+    if (tabBar) root.replaceChild(buildTabBar(state.activeTab), tabBar);
+  }
+});
 
 // ── SVG Icons ─────────────────────────────────────────────────────────────
 function chatIcon() {

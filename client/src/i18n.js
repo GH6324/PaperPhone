@@ -1,0 +1,507 @@
+/**
+ * PaperPhone i18n — Multi-language support
+ * Supported: zh (Chinese), en (English), ja (Japanese), ko (Korean), fr (French)
+ */
+
+const TRANSLATIONS = {
+  zh: {
+    // App
+    appName: 'PaperPhone',
+    appTagline: '端对端加密 · 前向保密 · 抗量子',
+    keyNotice: '🔐 密钥仅存储于本设备',
+
+    // Auth
+    username: '用户名',
+    password: '密码',
+    nickname: '昵称',
+    login: '登录',
+    register: '注册',
+    loggingIn: '正在登录...',
+    registering: '正在注册...',
+    noAccount: '没有账号？',
+    hasAccount: '已有账号？',
+    registerLink: '注册',
+    loginLink: '登录',
+    fillFields: '请填写用户名和密码',
+    opFailed: '操作失败',
+
+    // Tabs
+    tabChats: '聊天',
+    tabContacts: '通讯录',
+    tabDiscover: '发现',
+    tabMe: '我',
+
+    // Chats
+    chatsTitle: '聊天',
+    searchPlaceholder: '搜索',
+    noChats: '暂无会话',
+    noChatsHint: '去通讯录找朋友开始聊天吧',
+    tapToChat: '点击开始聊天',
+    encryptedMsg: '🔒 加密消息',
+
+    // Chat window
+    inputPlaceholder: '发送消息...',
+    voiceHint: '松手发送',
+    sendingVoice: '发送中...',
+    uploading: '上传中...',
+    uploadFailed: '上传失败',
+    micFailed: '无法访问麦克风',
+    encFailed: '加密失败',
+    sessionFailed: '建立安全通道失败',
+    imageLabel: '[图片]',
+
+    // Contacts
+    contactsTitle: '通讯录',
+    friendRequests: '好友申请',
+    searchUsers: '搜索用户名',
+    noContacts: '还没有好友',
+    noContactsHint: '搜索用户名添加好友',
+    noResults: '未找到用户',
+    searchFailed: '搜索失败',
+    alreadyFriend: '已是好友',
+    add: '添加',
+    accept: '接受',
+    sent: '已发送',
+    requestSent: '好友申请已发送',
+    friendAdded: '已添加好友',
+    opFail: '操作失败',
+    online: '在线',
+
+    // Discover
+    discoverTitle: '发现',
+    moments: '朋友圈',
+    searchFn: '搜一搜',
+    news: '看一看',
+    games: '游戏',
+    nearby: '附近的人',
+    shopping: '购物',
+
+    // Profile
+    profileTitle: '我',
+    e2eLabel: '端对端加密',
+    e2eValue: 'X3DH + Double Ratchet',
+    pqLabel: '抗量子加密',
+    pqValue: 'ML-KEM-768',
+    keyFingerprint: '查看设备密钥指纹',
+    changeNickname: '更改昵称',
+    language: '语言',
+    version: '版本',
+    addHomescreen: '添加到主屏幕 (iOS)',
+    logout: '退出登录',
+    logoutConfirm: '确定退出登录？',
+    nicknamePrompt: '请输入新昵称',
+    nicknameUpdated: '昵称已更新',
+    updateFailed: '更新失败',
+    noKey: '本地无密钥，请重新登录',
+    fpLabel: '密钥指纹 (IK)',
+    fpWarning: '⚠️ 与好友核对指纹可以验证无中间人攻击',
+    iosInstallTitle: 'iOS 添加到主屏幕',
+    iosInstallSteps: '1. 用 Safari 打开本页\n2. 点击底部分享按钮 ⬆️\n3. 选择"添加到主屏幕"\n4. 点击"添加"\n\n之后即可像原生 App 一样使用，无需企业证书！',
+    newMessage: '新消息',
+    newFriendRequest: '收到新的好友请求',
+    friendAccepted: '好友请求已接受',
+  },
+
+  en: {
+    appName: 'PaperPhone',
+    appTagline: 'E2E Encrypted · Forward Secrecy · Post-Quantum',
+    keyNotice: '🔐 Keys stored on this device only',
+
+    username: 'Username',
+    password: 'Password',
+    nickname: 'Display name',
+    login: 'Sign In',
+    register: 'Create Account',
+    loggingIn: 'Signing in...',
+    registering: 'Creating account...',
+    noAccount: "Don't have an account?",
+    hasAccount: 'Already have an account?',
+    registerLink: 'Sign Up',
+    loginLink: 'Sign In',
+    fillFields: 'Please fill in username and password',
+    opFailed: 'Operation failed',
+
+    tabChats: 'Chats',
+    tabContacts: 'Contacts',
+    tabDiscover: 'Discover',
+    tabMe: 'Me',
+
+    chatsTitle: 'Chats',
+    searchPlaceholder: 'Search',
+    noChats: 'No conversations yet',
+    noChatsHint: 'Find friends in Contacts to start chatting',
+    tapToChat: 'Tap to start chatting',
+    encryptedMsg: '🔒 Encrypted message',
+
+    inputPlaceholder: 'Message...',
+    voiceHint: 'Release to send',
+    sendingVoice: 'Sending...',
+    uploading: 'Uploading...',
+    uploadFailed: 'Upload failed',
+    micFailed: 'Cannot access microphone',
+    encFailed: 'Encryption failed',
+    sessionFailed: 'Failed to establish secure channel',
+    imageLabel: '[Image]',
+
+    contactsTitle: 'Contacts',
+    friendRequests: 'Friend Requests',
+    searchUsers: 'Search username',
+    noContacts: 'No friends yet',
+    noContactsHint: 'Search a username to add friends',
+    noResults: 'No users found',
+    searchFailed: 'Search failed',
+    alreadyFriend: 'Already friends',
+    add: 'Add',
+    accept: 'Accept',
+    sent: 'Sent',
+    requestSent: 'Friend request sent',
+    friendAdded: 'Friend added',
+    opFail: 'Operation failed',
+    online: 'Online',
+
+    discoverTitle: 'Discover',
+    moments: 'Moments',
+    searchFn: 'Search',
+    news: 'News',
+    games: 'Games',
+    nearby: 'People Nearby',
+    shopping: 'Shopping',
+
+    profileTitle: 'Me',
+    e2eLabel: 'End-to-End Encryption',
+    e2eValue: 'X3DH + Double Ratchet',
+    pqLabel: 'Post-Quantum',
+    pqValue: 'ML-KEM-768',
+    keyFingerprint: 'View Device Key Fingerprint',
+    changeNickname: 'Change Display Name',
+    language: 'Language',
+    version: 'Version',
+    addHomescreen: 'Add to Home Screen (iOS)',
+    logout: 'Sign Out',
+    logoutConfirm: 'Sign out of PaperPhone?',
+    nicknamePrompt: 'Enter new display name',
+    nicknameUpdated: 'Display name updated',
+    updateFailed: 'Update failed',
+    noKey: 'No local keys found. Please sign in again.',
+    fpLabel: 'Key Fingerprint (IK)',
+    fpWarning: '⚠️ Compare fingerprints with your contact to verify no MITM attack',
+    iosInstallTitle: 'Add to Home Screen',
+    iosInstallSteps: '1. Open this page in Safari\n2. Tap the Share button ⬆️\n3. Select "Add to Home Screen"\n4. Tap "Add"\n\nRun like a native app — no certificate needed!',
+    newMessage: 'New message',
+    newFriendRequest: 'New friend request received',
+    friendAccepted: 'Friend request accepted',
+  },
+
+  ja: {
+    appName: 'PaperPhone',
+    appTagline: 'E2E暗号化 · 前方秘匿性 · 耐量子',
+    keyNotice: '🔐 鍵はこのデバイスにのみ保存',
+
+    username: 'ユーザー名',
+    password: 'パスワード',
+    nickname: '表示名',
+    login: 'ログイン',
+    register: '新規登録',
+    loggingIn: 'ログイン中...',
+    registering: '登録中...',
+    noAccount: 'アカウントをお持ちでない方は',
+    hasAccount: 'すでにアカウントをお持ちの方は',
+    registerLink: '新規登録',
+    loginLink: 'ログイン',
+    fillFields: 'ユーザー名とパスワードを入力してください',
+    opFailed: '操作に失敗しました',
+
+    tabChats: 'チャット',
+    tabContacts: '連絡先',
+    tabDiscover: '発見',
+    tabMe: 'マイページ',
+
+    chatsTitle: 'チャット',
+    searchPlaceholder: '検索',
+    noChats: 'まだ会話がありません',
+    noChatsHint: '連絡先から友達を探してチャットを始めよう',
+    tapToChat: 'タップしてチャット開始',
+    encryptedMsg: '🔒 暗号化メッセージ',
+
+    inputPlaceholder: 'メッセージを入力...',
+    voiceHint: '離して送信',
+    sendingVoice: '送信中...',
+    uploading: 'アップロード中...',
+    uploadFailed: 'アップロード失敗',
+    micFailed: 'マイクにアクセスできません',
+    encFailed: '暗号化に失敗しました',
+    sessionFailed: 'セキュアチャネルの確立に失敗しました',
+    imageLabel: '[画像]',
+
+    contactsTitle: '連絡先',
+    friendRequests: '友達申請',
+    searchUsers: 'ユーザー名を検索',
+    noContacts: 'まだ友達がいません',
+    noContactsHint: 'ユーザー名を検索して友達を追加しよう',
+    noResults: 'ユーザーが見つかりません',
+    searchFailed: '検索に失敗しました',
+    alreadyFriend: '友達です',
+    add: '追加',
+    accept: '承認',
+    sent: '送信済み',
+    requestSent: '友達申請を送信しました',
+    friendAdded: '友達に追加しました',
+    opFail: '操作に失敗しました',
+    online: 'オンライン',
+
+    discoverTitle: '発見',
+    moments: 'モーメンツ',
+    searchFn: '検索',
+    news: 'ニュース',
+    games: 'ゲーム',
+    nearby: '近くの人',
+    shopping: 'ショッピング',
+
+    profileTitle: 'マイページ',
+    e2eLabel: 'E2E暗号化',
+    e2eValue: 'X3DH + Double Ratchet',
+    pqLabel: '耐量子暗号',
+    pqValue: 'ML-KEM-768',
+    keyFingerprint: 'デバイスキーフィンガープリントを表示',
+    changeNickname: '表示名を変更',
+    language: '言語',
+    version: 'バージョン',
+    addHomescreen: 'ホーム画面に追加 (iOS)',
+    logout: 'ログアウト',
+    logoutConfirm: 'ログアウトしますか？',
+    nicknamePrompt: '新しい表示名を入力してください',
+    nicknameUpdated: '表示名を更新しました',
+    updateFailed: '更新に失敗しました',
+    noKey: 'ローカルキーが見つかりません。再ログインしてください。',
+    fpLabel: 'キーフィンガープリント (IK)',
+    fpWarning: '⚠️ 友達とフィンガープリントを照合してMITM攻撃がないことを確認しよう',
+    iosInstallTitle: 'ホーム画面に追加',
+    iosInstallSteps: '1. Safariでこのページを開く\n2. 共有ボタン ⬆️ をタップ\n3. "ホーム画面に追加"を選択\n4. "追加"をタップ\n\nネイティブアプリのように使用可能！',
+    newMessage: '新しいメッセージ',
+    newFriendRequest: '友達申請が届きました',
+    friendAccepted: '友達申請が承認されました',
+  },
+
+  ko: {
+    appName: 'PaperPhone',
+    appTagline: 'E2E 암호화 · 전방 비밀성 · 양자 내성',
+    keyNotice: '🔐 키는 이 기기에만 저장됩니다',
+
+    username: '사용자명',
+    password: '비밀번호',
+    nickname: '표시 이름',
+    login: '로그인',
+    register: '회원가입',
+    loggingIn: '로그인 중...',
+    registering: '가입 중...',
+    noAccount: '계정이 없으신가요?',
+    hasAccount: '이미 계정이 있으신가요?',
+    registerLink: '회원가입',
+    loginLink: '로그인',
+    fillFields: '사용자명과 비밀번호를 입력해주세요',
+    opFailed: '작업에 실패했습니다',
+
+    tabChats: '채팅',
+    tabContacts: '연락처',
+    tabDiscover: '탐색',
+    tabMe: '나',
+
+    chatsTitle: '채팅',
+    searchPlaceholder: '검색',
+    noChats: '대화가 없습니다',
+    noChatsHint: '연락처에서 친구를 찾아 채팅을 시작하세요',
+    tapToChat: '탭하여 채팅 시작',
+    encryptedMsg: '🔒 암호화된 메시지',
+
+    inputPlaceholder: '메시지 입력...',
+    voiceHint: '손을 떼면 전송',
+    sendingVoice: '전송 중...',
+    uploading: '업로드 중...',
+    uploadFailed: '업로드 실패',
+    micFailed: '마이크에 접근할 수 없습니다',
+    encFailed: '암호화 실패',
+    sessionFailed: '보안 채널 설정에 실패했습니다',
+    imageLabel: '[이미지]',
+
+    contactsTitle: '연락처',
+    friendRequests: '친구 요청',
+    searchUsers: '사용자명 검색',
+    noContacts: '아직 친구가 없습니다',
+    noContactsHint: '사용자명을 검색해 친구를 추가하세요',
+    noResults: '사용자를 찾을 수 없습니다',
+    searchFailed: '검색 실패',
+    alreadyFriend: '이미 친구입니다',
+    add: '추가',
+    accept: '수락',
+    sent: '전송됨',
+    requestSent: '친구 요청을 보냈습니다',
+    friendAdded: '친구로 추가되었습니다',
+    opFail: '작업 실패',
+    online: '온라인',
+
+    discoverTitle: '탐색',
+    moments: '모멘트',
+    searchFn: '검색',
+    news: '뉴스',
+    games: '게임',
+    nearby: '주변 사람',
+    shopping: '쇼핑',
+
+    profileTitle: '나',
+    e2eLabel: 'E2E 암호화',
+    e2eValue: 'X3DH + Double Ratchet',
+    pqLabel: '양자 내성 암호화',
+    pqValue: 'ML-KEM-768',
+    keyFingerprint: '기기 키 지문 보기',
+    changeNickname: '표시 이름 변경',
+    language: '언어',
+    version: '버전',
+    addHomescreen: '홈 화면에 추가 (iOS)',
+    logout: '로그아웃',
+    logoutConfirm: 'PaperPhone에서 로그아웃하시겠습니까?',
+    nicknamePrompt: '새 표시 이름을 입력하세요',
+    nicknameUpdated: '표시 이름이 업데이트되었습니다',
+    updateFailed: '업데이트 실패',
+    noKey: '로컬 키를 찾을 수 없습니다. 다시 로그인해주세요.',
+    fpLabel: '키 지문 (IK)',
+    fpWarning: '⚠️ 친구와 지문을 비교하여 MITM 공격이 없는지 확인하세요',
+    iosInstallTitle: '홈 화면에 추가',
+    iosInstallSteps: '1. Safari에서 이 페이지를 여세요\n2. 공유 버튼 ⬆️ 를 탭하세요\n3. "홈 화면에 추가"를 선택하세요\n4. "추가"를 탭하세요\n\n네이티브 앱처럼 사용 가능합니다!',
+    newMessage: '새 메시지',
+    newFriendRequest: '새 친구 요청이 도착했습니다',
+    friendAccepted: '친구 요청이 수락되었습니다',
+  },
+
+  fr: {
+    appName: 'PaperPhone',
+    appTagline: 'Chiffrement E2E · Secret Persistant · Post-Quantique',
+    keyNotice: '🔐 Clés stockées uniquement sur cet appareil',
+
+    username: "Nom d'utilisateur",
+    password: 'Mot de passe',
+    nickname: 'Pseudo',
+    login: 'Connexion',
+    register: 'Créer un compte',
+    loggingIn: 'Connexion...',
+    registering: 'Création du compte...',
+    noAccount: 'Pas encore de compte ?',
+    hasAccount: 'Déjà un compte ?',
+    registerLink: "S'inscrire",
+    loginLink: 'Se connecter',
+    fillFields: "Veuillez renseigner le nom d'utilisateur et le mot de passe",
+    opFailed: "Échec de l'opération",
+
+    tabChats: 'Messages',
+    tabContacts: 'Contacts',
+    tabDiscover: 'Découvrir',
+    tabMe: 'Moi',
+
+    chatsTitle: 'Messages',
+    searchPlaceholder: 'Rechercher',
+    noChats: 'Aucune conversation',
+    noChatsHint: 'Trouvez des amis dans Contacts pour commencer',
+    tapToChat: 'Appuyez pour démarrer une conversation',
+    encryptedMsg: '🔒 Message chiffré',
+
+    inputPlaceholder: 'Message...',
+    voiceHint: 'Relâchez pour envoyer',
+    sendingVoice: 'Envoi...',
+    uploading: 'Chargement...',
+    uploadFailed: 'Échec du chargement',
+    micFailed: 'Impossible d'accéder au microphone',
+    encFailed: 'Échec du chiffrement',
+    sessionFailed: 'Impossible d\'établir le canal sécurisé',
+    imageLabel: '[Image]',
+
+    contactsTitle: 'Contacts',
+    friendRequests: "Demandes d'amis",
+    searchUsers: "Rechercher un nom d'utilisateur",
+    noContacts: 'Aucun ami pour le moment',
+    noContactsHint: "Recherchez un nom d'utilisateur pour ajouter des amis",
+    noResults: 'Aucun utilisateur trouvé',
+    searchFailed: 'Échec de la recherche',
+    alreadyFriend: 'Déjà ami',
+    add: 'Ajouter',
+    accept: 'Accepter',
+    sent: 'Envoyée',
+    requestSent: "Demande d'ami envoyée",
+    friendAdded: 'Ami ajouté',
+    opFail: "Échec de l'opération",
+    online: 'En ligne',
+
+    discoverTitle: 'Découvrir',
+    moments: 'Moments',
+    searchFn: 'Recherche',
+    news: 'Actualités',
+    games: 'Jeux',
+    nearby: 'Personnes proches',
+    shopping: 'Shopping',
+
+    profileTitle: 'Moi',
+    e2eLabel: 'Chiffrement E2E',
+    e2eValue: 'X3DH + Double Ratchet',
+    pqLabel: 'Post-Quantique',
+    pqValue: 'ML-KEM-768',
+    keyFingerprint: "Voir l'empreinte de la clé",
+    changeNickname: 'Changer le pseudo',
+    language: 'Langue',
+    version: 'Version',
+    addHomescreen: "Ajouter à l'écran d'accueil (iOS)",
+    logout: 'Déconnexion',
+    logoutConfirm: 'Se déconnecter de PaperPhone ?',
+    nicknamePrompt: 'Entrez un nouveau pseudo',
+    nicknameUpdated: 'Pseudo mis à jour',
+    updateFailed: 'Échec de la mise à jour',
+    noKey: 'Aucune clé locale trouvée. Veuillez vous reconnecter.',
+    fpLabel: 'Empreinte de clé (IK)',
+    fpWarning: '⚠️ Comparez les empreintes avec votre contact pour vérifier l\'absence d\'attaque MITM',
+    iosInstallTitle: "Ajouter à l'écran d'accueil",
+    iosInstallSteps: "1. Ouvrez cette page dans Safari\n2. Appuyez sur Partager ⬆️\n3. Sélectionnez \"Sur l'écran d'accueil\"\n4. Appuyez sur \"Ajouter\"\n\nUtilisable comme une app native !",
+    newMessage: 'Nouveau message',
+    newFriendRequest: "Nouvelle demande d'ami reçue",
+    friendAccepted: "Demande d'ami acceptée",
+  },
+};
+
+// ── Language Engine ────────────────────────────────────────────────────────
+
+const SUPPORTED = ['zh', 'en', 'ja', 'ko', 'fr'];
+const LANG_NAMES = { zh: '中文', en: 'English', ja: '日本語', ko: '한국어', fr: 'Français' };
+const LANG_FLAGS = { zh: '🇨🇳', en: '🇺🇸', ja: '🇯🇵', ko: '🇰🇷', fr: '🇫🇷' };
+
+function detectLang() {
+  const saved = localStorage.getItem('pp_lang');
+  if (saved && SUPPORTED.includes(saved)) return saved;
+  const nav = navigator.language || navigator.languages?.[0] || 'en';
+  if (nav.startsWith('zh')) return 'zh';
+  if (nav.startsWith('ja')) return 'ja';
+  if (nav.startsWith('ko')) return 'ko';
+  if (nav.startsWith('fr')) return 'fr';
+  return 'en';
+}
+
+let _lang = detectLang();
+const _listeners = new Set();
+
+export function t(key) {
+  return (TRANSLATIONS[_lang]?.[key] ?? TRANSLATIONS.en[key]) ?? key;
+}
+
+export function getLang() { return _lang; }
+export function getLangName(code) { return LANG_NAMES[code] || code; }
+export function getLangFlag(code) { return LANG_FLAGS[code] || '🌐'; }
+export function getSupportedLangs() { return SUPPORTED; }
+
+export function setLang(code) {
+  if (!SUPPORTED.includes(code)) return;
+  _lang = code;
+  localStorage.setItem('pp_lang', code);
+  document.documentElement.lang = code;
+  _listeners.forEach(fn => fn(code));
+}
+
+export function onLangChange(fn) { _listeners.add(fn); }
+export function offLangChange(fn) { _listeners.delete(fn); }
+
+// Apply immediately
+document.documentElement.lang = _lang;

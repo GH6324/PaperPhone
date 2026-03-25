@@ -1,8 +1,8 @@
 -- PaperPhone IM Database Schema
 -- MySQL 8.0+
-
-CREATE DATABASE IF NOT EXISTS paperphone CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE paperphone;
+-- Note: CREATE DATABASE / USE are intentionally omitted.
+-- When imported via docker-entrypoint, the target DB is already selected.
+-- For manual import: mysql -u root -p paperphone < schema.sql
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (

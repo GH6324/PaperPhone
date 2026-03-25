@@ -1,32 +1,30 @@
 /**
- * Chat Window — full screen with E2E encrypted messaging
+ * Chat Window — i18n v2 + full E2E encryption
  */
 import { state, avatarEl, goBack, showToast, formatTime } from '../app.js';
 import { api } from '../api.js';
 import { send, onEvent, offEvent } from '../socket.js';
 import { getKey, setKey } from '../crypto/keystore.js';
-import {
-  x3dhSend, x3dhReceive, ratchetInit, ratchetEncrypt, ratchetDecrypt
-} from '../crypto/ratchet.js';
+import { x3dhSend, x3dhReceive, ratchetInit, ratchetEncrypt, ratchetDecrypt } from '../crypto/ratchet.js';
+import { t } from '../i18n.js';
 
 const esc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
 export async function renderChat(root, chat) {
   root.innerHTML = '';
-  root.style.display = 'flex';
-  root.style.flexDirection = 'column';
-  root.style.height = '100dvh';
+  root.style.cssText = 'display:flex;flex-direction:column;height:100dvh;';
 
-  // ── Top bar ─────────────────────────────────────────────────
+  // ── Top bar ──────────────────────────────────────────────────
   const topbar = document.createElement('div');
   topbar.className = 'topbar';
   topbar.innerHTML = `
     <button class="topbar-btn topbar-back" id="back-btn">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-      返回
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+      </svg>
     </button>
     <div class="topbar-title" id="chat-title">${esc(chat.name)}</div>
-    <div class="topbar-action" style="min-width:44px"></div>
+    <div style="min-width:44px"></div>
   `;
   root.appendChild(topbar);
   topbar.querySelector('#back-btn').onclick = goBack;
@@ -46,12 +44,26 @@ export async function renderChat(root, chat) {
   const toolbar = document.createElement('div');
   toolbar.className = 'input-toolbar';
   toolbar.innerHTML = `
-    <button class="input-toolbar-btn" id="mic-btn" title="语音">🎙</button>
-    <textarea id="chat-input" rows="1" placeholder="发送消息..." aria-label="消息输入框"></textarea>
-    <button class="input-toolbar-btn" id="emoji-btn" title="表情">😊</button>
-    <button class="input-toolbar-btn" id="img-btn" title="图片">🖼</button>
-    <button class="send-btn hidden" id="send-btn" aria-label="发送">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+    <button class="input-toolbar-btn" id="mic-btn" title="${t('voiceHint')}">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85A6.01 6.01 0 0 1 11 17.92V20H9v-2.08A6.01 6.01 0 0 1 3.07 11.85c-.08-.49-.49-.85-.97-.85-.61 0-1.07.54-.98 1.14C1.78 16.47 5.5 20 10 20.93V22h4v-1.07c4.5-.93 8.22-4.46 8.88-9A1 1 0 0 0 17.91 11z"/>
+      </svg>
+    </button>
+    <textarea id="chat-input" rows="1" placeholder="${t('inputPlaceholder')}" aria-label="${t('inputPlaceholder')}"></textarea>
+    <button class="input-toolbar-btn" id="emoji-btn" title="Emoji">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+        <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
+      </svg>
+    </button>
+    <button class="input-toolbar-btn" id="img-btn" title="${t('uploading')}">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+        <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+      </svg>
+    </button>
+    <button class="send-btn hidden" id="send-btn" aria-label="${t('inputPlaceholder')}">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+      </svg>
     </button>
     <input type="file" id="file-input" accept="image/*,audio/*,video/*" class="hidden">
   `;
@@ -60,27 +72,24 @@ export async function renderChat(root, chat) {
   // ── Session state ─────────────────────────────────────────────
   let ratchetState = await getKey(`session_${chat.id}`);
 
-  // ── Render a message bubble ───────────────────────────────────
+  // ── Render bubble ─────────────────────────────────────────────
   function addBubble(text, fromMe, ts, msgType = 'text', extra = {}) {
     const row = document.createElement('div');
     row.className = `msg-row ${fromMe ? 'out' : 'in'}`;
 
     let content = '';
     if (msgType === 'image') {
-      content = `<img class="bubble-image" src="${esc(extra.url || text)}" alt="图片">`;
+      content = `<img class="bubble-image" src="${esc(extra.url || text)}" alt="image">`;
     } else if (msgType === 'voice') {
       content = `<div class="bubble-voice">
-        <span class="voice-icon" data-src="${esc(extra.url || text)}">🔊</span>
+        <button class="voice-play-btn" data-src="${esc(extra.url || text)}">▶</button>
         <span class="voice-dur">${extra.duration || '?'}″</span>
       </div>`;
     } else {
       content = esc(text);
     }
 
-    if (!fromMe) {
-      const av = avatarEl(chat.name, chat.avatar, 'avatar-sm');
-      row.appendChild(av);
-    }
+    if (!fromMe) row.appendChild(avatarEl(chat.name, chat.avatar, 'avatar-sm'));
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
     bubble.innerHTML = content;
@@ -89,8 +98,8 @@ export async function renderChat(root, chat) {
       bubble.querySelector('.bubble-image').addEventListener('click', e => showImageViewer(e.target.src));
     }
     if (msgType === 'voice') {
-      bubble.querySelector('.voice-icon').addEventListener('click', e => {
-        const audio = new Audio(e.target.dataset.src);
+      bubble.querySelector('.voice-play-btn').addEventListener('click', e => {
+        const audio = new Audio(e.currentTarget.dataset.src);
         audio.play();
       });
     }
@@ -100,7 +109,7 @@ export async function renderChat(root, chat) {
     msgArea.scrollTop = msgArea.scrollHeight;
   }
 
-  // ── Load history (ciphertext decoded client-side) ─────────────
+  // ── Load history ──────────────────────────────────────────────
   try {
     const history = chat.type === 'group'
       ? await api.groupHistory(chat.id)
@@ -108,7 +117,7 @@ export async function renderChat(root, chat) {
 
     for (const row of history) {
       const fromMe = row.from_id === state.user.id;
-      let text = '🔒 加密消息';
+      let text = t('encryptedMsg');
       if (ratchetState) {
         try {
           const res = await ratchetDecrypt(ratchetState, row.ciphertext, JSON.parse(row.header || '{}'));
@@ -121,11 +130,9 @@ export async function renderChat(root, chat) {
     if (ratchetState) await setKey(`session_${chat.id}`, ratchetState);
   } catch {}
 
-  // ── Init session if new chat ──────────────────────────────────
+  // ── Init session ──────────────────────────────────────────────
   async function ensureSession() {
-    if (ratchetState) return;
-    if (chat.type !== 'private') return; // Group: symmetric handled differently
-
+    if (ratchetState || chat.type !== 'private') return;
     try {
       await window._sodiumPromise;
       const bundle = await api.prekeys(chat.id);
@@ -135,11 +142,11 @@ export async function renderChat(root, chat) {
       ratchetState._x3dhHeader = x3dhHeader;
       await setKey(`session_${chat.id}`, ratchetState);
     } catch (err) {
-      showToast('建立安全通道失败: ' + err.message);
+      showToast(t('sessionFailed') + ': ' + err.message);
     }
   }
 
-  // ── Send a message ────────────────────────────────────────────
+  // ── Send message ──────────────────────────────────────────────
   async function sendMessage(text, msgType = 'text') {
     if (!text.trim() && msgType === 'text') return;
     await ensureSession();
@@ -153,43 +160,33 @@ export async function renderChat(root, chat) {
         ratchetState = res.newState;
         ratchetState._x3dhHeader = null;
         await setKey(`session_${chat.id}`, ratchetState);
-      } catch (err) {
-        showToast('加密失败: ' + err.message);
-        return;
-      }
+      } catch (err) { showToast(t('encFailed') + ': ' + err.message); return; }
     }
 
     addBubble(text, true, Date.now(), msgType);
-
     send({
       type: 'message',
       to: chat.type === 'private' ? chat.id : undefined,
       group_id: chat.type === 'group' ? chat.id : undefined,
-      msg_type: msgType,
-      ciphertext,
-      header,
+      msg_type: msgType, ciphertext, header,
     });
-
-    // Update chat list
     const c = state.chats.find(s => s.id === chat.id);
-    if (c) { c.lastMsg = msgType === 'text' ? text : '[图片]'; c.lastTs = Date.now(); }
+    if (c) { c.lastMsg = msgType === 'text' ? text : t('imageLabel'); c.lastTs = Date.now(); }
   }
 
-  // ── Send button logic ─────────────────────────────────────────
+  // ── Input events ──────────────────────────────────────────────
   const inputEl = toolbar.querySelector('#chat-input');
   const sendBtn = toolbar.querySelector('#send-btn');
   const emojiBtn = toolbar.querySelector('#emoji-btn');
-  const imgBtn  = toolbar.querySelector('#img-btn');
+  const imgBtn = toolbar.querySelector('#img-btn');
   const fileInput = toolbar.querySelector('#file-input');
 
   inputEl.addEventListener('input', () => {
     inputEl.style.height = 'auto';
-    inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
-    sendBtn.classList.toggle('hidden', !inputEl.value.trim());
-    emojiBtn.classList.toggle('hidden', !!inputEl.value.trim());
-
-    // Typing indicator
-    send({ type: 'typing', to: chat.type === 'private' ? chat.id : undefined, group_id: chat.type === 'group' ? chat.id : undefined });
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 130) + 'px';
+    const hasText = !!inputEl.value.trim();
+    sendBtn.classList.toggle('hidden', !hasText);
+    emojiBtn.classList.toggle('hidden', hasText);
   });
 
   inputEl.addEventListener('keydown', e => {
@@ -199,36 +196,33 @@ export async function renderChat(root, chat) {
       if (text) { sendMessage(text); inputEl.value = ''; inputEl.style.height = 'auto'; sendBtn.classList.add('hidden'); emojiBtn.classList.remove('hidden'); }
     }
   });
-
   sendBtn.addEventListener('click', () => {
     const text = inputEl.value.trim();
     if (text) { sendMessage(text); inputEl.value = ''; inputEl.style.height = 'auto'; sendBtn.classList.add('hidden'); emojiBtn.classList.remove('hidden'); }
   });
 
-  // ── Image send ────────────────────────────────────────────────
+  // Image upload
   imgBtn.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files[0];
     if (!file) return;
     try {
-      showToast('上传中...');
+      showToast(t('uploading'));
       const { url } = await api.upload(file);
-      addBubble(url, true, Date.now(), file.type.startsWith('image') ? 'image' : 'file', { url });
+      const isImg = file.type.startsWith('image');
+      addBubble(url, true, Date.now(), isImg ? 'image' : 'file', { url });
       send({ type: 'message', to: chat.type === 'private' ? chat.id : undefined,
         group_id: chat.type === 'group' ? chat.id : undefined,
-        msg_type: file.type.startsWith('image') ? 'image' : 'file',
-        ciphertext: url, header: null });
-    } catch { showToast('上传失败'); }
+        msg_type: isImg ? 'image' : 'file', ciphertext: url, header: null });
+    } catch { showToast(t('uploadFailed')); }
     fileInput.value = '';
   });
 
-  // ── Voice recording ───────────────────────────────────────────
-  let mediaRec, recChunks = [], recStart;
+  // Voice recording
+  let mediaRec, recChunks = [], recStart, voiceOverlay = null;
   const micBtn = toolbar.querySelector('#mic-btn');
-  let voiceOverlay = null;
-
   micBtn.addEventListener('mousedown', startVoice);
-  micBtn.addEventListener('touchstart', e => { e.preventDefault(); startVoice(); });
+  micBtn.addEventListener('touchstart', e => { e.preventDefault(); startVoice(); }, { passive: false });
   document.addEventListener('mouseup', stopVoice);
   document.addEventListener('touchend', stopVoice);
 
@@ -236,55 +230,55 @@ export async function renderChat(root, chat) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRec = new MediaRecorder(stream);
-      recChunks = [];
-      recStart = Date.now();
+      recChunks = []; recStart = Date.now();
       mediaRec.ondataavailable = e => recChunks.push(e.data);
       mediaRec.start();
       voiceOverlay = document.createElement('div');
       voiceOverlay.className = 'voice-overlay';
-      voiceOverlay.innerHTML = `<div class="voice-pulse">🎙</div><p>松手发送</p>`;
+      voiceOverlay.innerHTML = `<div class="voice-pulse">🎙</div><p>${t('voiceHint')}</p>`;
       document.body.appendChild(voiceOverlay);
-    } catch { showToast('无法访问麦克风'); }
+    } catch { showToast(t('micFailed')); }
   }
-
   async function stopVoice() {
     if (!mediaRec || mediaRec.state === 'inactive') return;
     mediaRec.stop();
-    voiceOverlay?.remove();
+    voiceOverlay?.remove(); voiceOverlay = null;
     const duration = Math.round((Date.now() - recStart) / 1000);
     mediaRec.onstop = async () => {
       const blob = new Blob(recChunks, { type: 'audio/webm' });
       const file = new File([blob], `voice_${Date.now()}.webm`, { type: 'audio/webm' });
       try {
-        showToast('发送中...');
+        showToast(t('sendingVoice'));
         const { url } = await api.upload(file);
         addBubble(url, true, Date.now(), 'voice', { url, duration });
         send({ type: 'message', to: chat.type === 'private' ? chat.id : undefined,
           group_id: chat.type === 'group' ? chat.id : undefined,
           msg_type: 'voice', ciphertext: url, header: null });
-      } catch { showToast('语音发送失败'); }
+      } catch { showToast(t('uploadFailed')); }
     };
     mediaRec.stream.getTracks().forEach(t => t.stop());
   }
 
-  // ── Emoji picker (simple) ─────────────────────────────────────
-  const emojis = ['😊','😂','🥰','😎','👍','🎉','❤️','🔥','😭','🙏','💪','✨','😅','🤣','😍'];
+  // Emoji picker
+  const EMOJIS = ['😊','😂','🥰','😎','👍','🎉','❤️','🔥','😭','🙏','💪','✨','😅','🤣','😍','🎊','🥳','😇'];
   let emojiPanel = null;
   emojiBtn.addEventListener('click', () => {
     if (emojiPanel) { emojiPanel.remove(); emojiPanel = null; return; }
     emojiPanel = document.createElement('div');
     emojiPanel.style.cssText = `
-      position:absolute;bottom:70px;left:0;right:0;background:var(--surface);
-      border-top:.5px solid var(--border);padding:12px;
-      display:flex;flex-wrap:wrap;gap:8px;z-index:200;`;
-    emojis.forEach(em => {
+      position:fixed;bottom:calc(var(--tab-h, 60px) + 60px);
+      left:0;right:0;background:var(--surface);
+      border-top:.5px solid var(--border);padding:12px 16px;
+      display:flex;flex-wrap:wrap;gap:6px;z-index:200;
+      box-shadow:var(--shadow-lg);`;
+    EMOJIS.forEach(em => {
       const btn = document.createElement('button');
       btn.textContent = em;
-      btn.style.cssText = 'background:none;border:none;font-size:24px;cursor:pointer;padding:4px;border-radius:6px;';
-      btn.onclick = () => { inputEl.value += em; inputEl.dispatchEvent(new Event('input')); };
+      btn.style.cssText = 'background:none;border:none;font-size:26px;cursor:pointer;padding:6px;border-radius:8px;line-height:1;';
+      btn.onclick = () => { inputEl.value += em; inputEl.dispatchEvent(new Event('input')); emojiPanel.remove(); emojiPanel = null; };
       emojiPanel.appendChild(btn);
     });
-    root.appendChild(emojiPanel);
+    document.body.appendChild(emojiPanel);
   });
 
   // ── Incoming messages ─────────────────────────────────────────
@@ -292,9 +286,8 @@ export async function renderChat(root, chat) {
     const matchId = msg.group_id || msg.from;
     if (matchId !== chat.id) return;
 
-    let text = '🔒 加密消息';
+    let text = t('encryptedMsg');
     if (ratchetState && msg.ciphertext) {
-      // First message — may need X3DH receive
       if (msg.header && !ratchetState.DHr) {
         try {
           const h = JSON.parse(msg.header);
@@ -319,19 +312,21 @@ export async function renderChat(root, chat) {
 
   onEvent('message', handleIncoming);
 
-  // Typing
   let typingTimer;
   onEvent('typing', ({ from }) => {
-    if (from !== chat.id && from !== state.user.id) return;
+    if (from !== chat.id) return;
     typingEl.classList.remove('hidden');
     clearTimeout(typingTimer);
     typingTimer = setTimeout(() => typingEl.classList.add('hidden'), 3000);
   });
 
-  // Cleanup on navigate away
   root._cleanup = () => {
     offEvent('message', handleIncoming);
     clearTimeout(typingTimer);
+    voiceOverlay?.remove();
+    if (emojiPanel) { emojiPanel.remove(); emojiPanel = null; }
+    document.removeEventListener('mouseup', stopVoice);
+    document.removeEventListener('touchend', stopVoice);
   };
 }
 
@@ -339,8 +334,8 @@ function showImageViewer(src) {
   const viewer = document.createElement('div');
   viewer.className = 'img-viewer';
   viewer.innerHTML = `
-    <span class="img-viewer-close">✕</span>
-    <img src="${src}" alt="图片">
+    <div class="img-viewer-close">✕</div>
+    <img src="${src}" alt="image">
   `;
   viewer.querySelector('.img-viewer-close').onclick = () => viewer.remove();
   viewer.onclick = e => { if (e.target === viewer) viewer.remove(); };
