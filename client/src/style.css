@@ -792,28 +792,108 @@ html, body {
   border-radius:8px; padding:6px 12px; font-size:14px; cursor:pointer; }
 
 /* Compose modal */
-.compose-modal { position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.5);
-  display:flex; align-items:flex-end; }
-.compose-sheet { background:var(--card-bg); border-radius:20px 20px 0 0;
-  width:100%; max-height:90vh; overflow-y:auto; padding-bottom:env(safe-area-inset-bottom,20px); }
-.compose-header { display:flex; align-items:center; justify-content:space-between;
-  padding:14px 16px; border-bottom:1px solid var(--border-color); }
-.compose-textarea { width:100%; min-height:120px; background:transparent; border:none;
-  padding:14px 16px; font-size:16px; color:var(--text-primary); resize:none; outline:none;
-  font-family:inherit; box-sizing:border-box; }
-.compose-char-count { text-align:right; font-size:12px; color:var(--text-quaternary);
-  padding:0 16px 8px; }
-.compose-images { display:flex; flex-wrap:wrap; gap:8px; padding:0 16px 8px; }
-.compose-thumb { position:relative; width:80px; height:80px; border-radius:8px; overflow:hidden; }
-.compose-thumb img { width:100%; height:100%; object-fit:cover; }
-.compose-thumb-rm { position:absolute; top:2px; right:2px; background:rgba(0,0,0,.6);
-  color:#fff; border:none; border-radius:50%; width:20px; height:20px;
-  font-size:11px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
-.compose-add-img-btn { display:flex; align-items:center; gap:8px; margin:0 16px 12px;
-  padding:10px 14px; background:var(--input-bg); border:1px dashed var(--border-color);
-  border-radius:10px; font-size:15px; color:var(--text-secondary); cursor:pointer; width:calc(100% - 32px); }
-.compose-add-img-btn:hover { border-color:var(--accent-blue, #4F8EF7);
-  color:var(--accent-blue, #4F8EF7); }
+/* ── Compose Modal (premium redesign) ─────────────────────────── */
+.compose-modal {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,.45);
+  display: flex; align-items: flex-end;
+  backdrop-filter: blur(4px);
+}
+.compose-sheet {
+  background: var(--card-bg);
+  border-radius: 20px 20px 0 0;
+  width: 100%; max-height: 92vh;
+  overflow-y: auto;
+  padding-bottom: max(env(safe-area-inset-bottom), 20px);
+  box-shadow: 0 -8px 40px rgba(0,0,0,.25);
+  transform: translateY(100%);
+  transition: transform .28s cubic-bezier(.4,0,.2,1);
+}
+.compose-sheet-open { transform: translateY(0) !important; }
+.compose-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--border-color);
+  position: sticky; top: 0; background: var(--card-bg); z-index: 1;
+}
+.compose-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+.compose-cancel-btn {
+  background: none; border: none; font-size: 15px;
+  color: var(--text-secondary); cursor: pointer; padding: 4px 0; min-width: 44px;
+}
+.compose-publish-btn {
+  background: var(--accent-blue, #4F8EF7);
+  border: none; border-radius: 20px;
+  padding: 6px 16px; font-size: 14px; font-weight: 600;
+  color: #fff; cursor: pointer; min-width: 60px;
+  transition: opacity .15s, transform .1s;
+}
+.compose-publish-btn:disabled { opacity: .35; cursor: default; }
+.compose-publish-btn:not(:disabled):active { transform: scale(.95); }
+.compose-user-row {
+  display: flex; gap: 12px;
+  padding: 14px 16px 4px; align-items: flex-start;
+}
+.compose-user-avatar {
+  width: 42px !important; height: 42px !important;
+  border-radius: 10px !important; flex-shrink: 0;
+}
+.compose-body { flex: 1; min-width: 0; }
+.compose-textarea {
+  width: 100%; min-height: 100px;
+  background: transparent; border: none; outline: none;
+  padding: 2px 0 10px; font-size: 16px; line-height: 1.6;
+  color: var(--text-primary); resize: none; overflow: hidden;
+  font-family: inherit; box-sizing: border-box;
+}
+.compose-textarea::placeholder { color: var(--text-tertiary, #aaa); }
+.compose-images {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 5px; padding: 4px 0 10px;
+}
+.compose-thumb {
+  position: relative; aspect-ratio: 1;
+  border-radius: 8px; overflow: hidden; background: var(--input-bg);
+}
+.compose-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+.compose-thumb-loading {
+  display: flex; align-items: center; justify-content: center;
+}
+.compose-thumb-spinner {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2.5px solid var(--border-color);
+  border-top-color: var(--accent-blue, #4F8EF7);
+  animation: spin .7s linear infinite;
+}
+.compose-thumb-rm {
+  position: absolute; top: 4px; right: 4px;
+  background: rgba(0,0,0,.55); color: #fff;
+  border: none; border-radius: 50%;
+  width: 22px; height: 22px; font-size: 12px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.compose-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px 6px;
+  border-top: 1px solid var(--border-color);
+  position: sticky; bottom: 0; background: var(--card-bg);
+}
+.compose-char-count {
+  font-size: 12px; color: var(--text-quaternary, #999); transition: color .2s;
+}
+.compose-photo-btn {
+  position: relative; background: none; border: none; padding: 6px;
+  color: var(--text-secondary); cursor: pointer; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  transition: color .15s, background .15s;
+}
+.compose-photo-btn:hover, .compose-photo-btn-active { color: var(--accent-blue, #4F8EF7); }
+.compose-photo-count {
+  position: absolute; top: 0; right: 0;
+  background: var(--accent-blue, #4F8EF7); color: #fff;
+  font-size: 9px; font-weight: 700; border-radius: 10px;
+  padding: 1px 4px; line-height: 1.4;
+}
 
 /* Lightbox */
 .lightbox-overlay { position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,.94);

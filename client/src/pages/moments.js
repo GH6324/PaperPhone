@@ -257,78 +257,182 @@ export function renderMoments(root) {
 
   // ── Compose ───────────────────────────────────────────────────────────
   function openCompose() {
+    const user = state.user || {};
+    const av = avatarEl(user.nickname || user.username || '?', user.avatar, 'compose-user-avatar');
+
     const modal = document.createElement('div');
     modal.className = 'compose-modal';
-    modal.innerHTML = `
-      <div class="compose-sheet">
-        <div class="compose-header">
-          <button class="icon-btn" id="compose-cancel">${t('cancel') || '取消'}</button>
-          <span style="font-weight:600">${t('newMoment') || '发动态'}</span>
-          <button class="icon-btn compose-submit" id="compose-submit" style="color:var(--blue);font-weight:600">${t('publish') || '发布'}</button>
-        </div>
-        <textarea id="compose-text" class="compose-textarea" maxlength="1024"
-          placeholder="${t('momentPlaceholder') || '这一刻，想和大家分享什么...'}"></textarea>
-        <div class="compose-char-count"><span id="compose-char-cur">0</span>/1024</div>
-        <div id="compose-images" class="compose-images"></div>
-        <button id="compose-add-img" class="compose-add-img-btn">
-          <span>📷</span><span>${t('addPhoto') || '添加图片'}</span>
-        </button>
-        <input type="file" id="compose-file-input" accept="image/*" multiple style="display:none">
-      </div>
+
+    const sheet = document.createElement('div');
+    sheet.className = 'compose-sheet';
+
+    // ── Header bar ──────────────────────────────────────────────
+    const hdr = document.createElement('div');
+    hdr.className = 'compose-header';
+    hdr.innerHTML = `
+      <button class="compose-cancel-btn" id="compose-cancel">${t('cancel')}</button>
+      <span class="compose-title">${t('newMoment')}</span>
+      <button class="compose-publish-btn" id="compose-submit" disabled>${t('publish')}</button>
     `;
+
+    // ── User row (avatar + name + textarea) ──────────────────────
+    const userRow = document.createElement('div');
+    userRow.className = 'compose-user-row';
+    userRow.appendChild(av);
+
+    const body = document.createElement('div');
+    body.className = 'compose-body';
+
+    const textarea = document.createElement('textarea');
+    textarea.id = 'compose-text';
+    textarea.className = 'compose-textarea';
+    textarea.maxLength = 1024;
+    textarea.rows = 4;
+    textarea.placeholder = t('momentPlaceholder');
+    body.appendChild(textarea);
+
+    // Image preview grid
+    const imagesDiv = document.createElement('div');
+    imagesDiv.className = 'compose-images';
+    body.appendChild(imagesDiv);
+
+    userRow.appendChild(body);
+
+    // ── Bottom toolbar ───────────────────────────────────────────
+    const toolbar = document.createElement('div');
+    toolbar.className = 'compose-toolbar';
+
+    const charCount = document.createElement('span');
+    charCount.className = 'compose-char-count';
+    charCount.textContent = '0 / 1024';
+
+    const photoBtn = document.createElement('button');
+    photoBtn.className = 'compose-photo-btn';
+    photoBtn.id = 'compose-add-img';
+    photoBtn.innerHTML = `
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="3"/>
+        <circle cx="8.5" cy="8.5" r="1.5"/>
+        <polyline points="21 15 16 10 5 21"/>
+      </svg>
+      <span class="compose-photo-count" id="compose-photo-count" style="display:none">0/9</span>
+    `;
+
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.id = 'compose-file-input';
+    fileInput.accept = 'image/*';
+    fileInput.multiple = true;
+    fileInput.style.display = 'none';
+
+    toolbar.appendChild(charCount);
+    toolbar.appendChild(photoBtn);
+    toolbar.appendChild(fileInput);
+
+    sheet.appendChild(hdr);
+    sheet.appendChild(userRow);
+    sheet.appendChild(toolbar);
+    modal.appendChild(sheet);
     document.body.appendChild(modal);
 
-    const textarea = modal.querySelector('#compose-text');
-    const charCur = modal.querySelector('#compose-char-cur');
-    const imagesDiv = modal.querySelector('#compose-images');
-    const fileInput = modal.querySelector('#compose-file-input');
+    // Animate up
+    requestAnimationFrame(() => sheet.classList.add('compose-sheet-open'));
+
+    const submitBtn = modal.querySelector('#compose-submit');
+    const photoCount = modal.querySelector('#compose-photo-count');
     let uploadedUrls = [];
 
-    textarea.oninput = () => { charCur.textContent = textarea.value.length; };
-    modal.querySelector('#compose-cancel').onclick = () => modal.remove();
+    // ── Auto-grow textarea + enable publish ──────────────────────
+    textarea.oninput = () => {
+      textarea.style.height = 'auto';
+      textarea.style.height = textarea.scrollHeight + 'px';
+      charCount.textContent = `${textarea.value.length} / 1024`;
+      charCount.style.color = textarea.value.length > 900 ? '#FF3B5C' : '';
+      updatePublish();
+    };
 
-    // Add images
-    modal.querySelector('#compose-add-img').onclick = () => {
+    function updatePublish() {
+      const ok = textarea.value.trim().length > 0 || uploadedUrls.length > 0;
+      submitBtn.disabled = !ok;
+    }
+
+    // ── Close ────────────────────────────────────────────────────
+    const dismiss = () => {
+      sheet.classList.remove('compose-sheet-open');
+      setTimeout(() => modal.remove(), 280);
+    };
+    modal.querySelector('#compose-cancel').onclick = dismiss;
+    modal.addEventListener('click', e => { if (e.target === modal) dismiss(); });
+
+    // ── Photo upload ─────────────────────────────────────────────
+    photoBtn.onclick = () => {
       if (uploadedUrls.length >= 9) { showToast('最多选择 9 张图片'); return; }
       fileInput.click();
     };
+
     fileInput.onchange = async () => {
-      const files = Array.from(fileInput.files);
-      const remaining = 9 - uploadedUrls.length;
-      const toUpload = files.slice(0, remaining);
-      for (const file of toUpload) {
+      const files = Array.from(fileInput.files).slice(0, 9 - uploadedUrls.length);
+      for (const file of files) {
+        // Placeholder thumb with spinner
+        const thumb = document.createElement('div');
+        thumb.className = 'compose-thumb compose-thumb-loading';
+        thumb.innerHTML = `<div class="compose-thumb-spinner"></div>`;
+        imagesDiv.appendChild(thumb);
+
         try {
-          showToast('上传中...');
           const { url } = await api.upload(file);
           uploadedUrls.push(url);
-          const thumb = document.createElement('div');
-          thumb.className = 'compose-thumb';
+          thumb.classList.remove('compose-thumb-loading');
+          thumb.innerHTML = '';
           const img = document.createElement('img');
           img.src = url;
           const rm = document.createElement('button');
           rm.className = 'compose-thumb-rm';
-          rm.textContent = '✕';
-          rm.onclick = () => { uploadedUrls = uploadedUrls.filter(u => u !== url); thumb.remove(); };
+          rm.innerHTML = '✕';
+          rm.onclick = e => {
+            e.stopPropagation();
+            uploadedUrls = uploadedUrls.filter(u => u !== url);
+            thumb.remove();
+            updatePhotoCount();
+            updatePublish();
+          };
           thumb.append(img, rm);
-          imagesDiv.appendChild(thumb);
-        } catch { showToast(t('uploadFailed') || '上传失败'); }
+        } catch {
+          thumb.remove();
+          showToast(t('uploadFailed'));
+        }
+        updatePhotoCount();
+        updatePublish();
       }
       fileInput.value = '';
     };
 
-    // Publish
-    modal.querySelector('#compose-submit').onclick = async () => {
+    function updatePhotoCount() {
+      if (uploadedUrls.length > 0) {
+        photoCount.style.display = '';
+        photoCount.textContent = `${uploadedUrls.length}/9`;
+        photoBtn.classList.toggle('compose-photo-btn-active', uploadedUrls.length > 0);
+      } else {
+        photoCount.style.display = 'none';
+        photoBtn.classList.remove('compose-photo-btn-active');
+      }
+    }
+
+    // ── Publish ──────────────────────────────────────────────────
+    submitBtn.onclick = async () => {
       const text = textarea.value.trim();
       if (!text && uploadedUrls.length === 0) { showToast('请输入内容或添加图片'); return; }
+      submitBtn.disabled = true;
+      submitBtn.textContent = t('sendMoment') || '发布中...';
       try {
-        modal.querySelector('#compose-submit').disabled = true;
         await api.createMoment({ text, images: uploadedUrls });
-        modal.remove();
-        // Reload feed
-        exhausted = false;
-        oldestTs = null;
-        loadFeed(false);
-      } catch { showToast(t('opFailed') || '发布失败'); modal.querySelector('#compose-submit').disabled = false; }
+        dismiss();
+        setTimeout(() => { exhausted = false; oldestTs = null; loadFeed(false); }, 300);
+      } catch {
+        showToast(t('opFailed') || '发布失败');
+        submitBtn.disabled = false;
+        submitBtn.textContent = t('publish');
+      }
     };
   }
 }
