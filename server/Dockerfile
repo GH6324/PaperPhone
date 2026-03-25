@@ -21,6 +21,9 @@ COPY src ./src
 COPY db  ./db
 COPY package.json ./
 
+# Create uploads directory for local file fallback (when R2 is not configured)
+RUN mkdir -p /app/uploads && chown -R paperphone:paperphone /app/uploads
+
 USER paperphone
 
 ENV NODE_ENV=production \

@@ -1,34 +1,74 @@
 #!/usr/bin/env bash
-# build-and-push.sh — Build Docker images and push to Docker Hub
-# Usage: DOCKER_HUB_USER=yourname TAG=v1.0.0 bash build-and-push.sh
+# build-and-push.sh — Build multi-arch Docker images and push to Docker Hub
+#
+# Usage:
+#   bash build-and-push.sh                        # push as 'latest'
+#   TAG=v1.2.0 bash build-and-push.sh             # push as specific tag + also retag 'latest'
+#   PUSH=0 bash build-and-push.sh                 # build only, no push (single-arch)
+#
+# Prerequisites:
+#   docker login
+#   docker buildx create --use --name multiarch-builder  # only needed once
 
 set -euo pipefail
 
-DOCKER_HUB_USER="${DOCKER_HUB_USER:?Set DOCKER_HUB_USER=your-dockerhub-username}"
+# ── Config ────────────────────────────────────────────────────────────────
+REPO="${REPO:-facilisvelox}"          # Docker Hub username/org
 TAG="${TAG:-latest}"
+PUSH="${PUSH:-1}"                      # set to 0 to skip push
+PLATFORMS="${PLATFORMS:-linux/amd64,linux/arm64}"
 
-SERVER_IMAGE="${DOCKER_HUB_USER}/paperphone-server:${TAG}"
-CLIENT_IMAGE="${DOCKER_HUB_USER}/paperphone-client:${TAG}"
+SERVER_IMAGE="${REPO}/paperphone-server"
+CLIENT_IMAGE="${REPO}/paperphone-client"
 
-echo "🔨 Building server: $SERVER_IMAGE"
-docker build \
-  --platform linux/amd64,linux/arm64 \
-  -t "$SERVER_IMAGE" \
-  ./server
+# ── Helper ────────────────────────────────────────────────────────────────
+build_and_push() {
+  local name="$1" context="$2" tag="$3" also_latest="$4"
 
-echo "🔨 Building client: $CLIENT_IMAGE"
-docker build \
-  --platform linux/amd64,linux/arm64 \
-  -t "$CLIENT_IMAGE" \
-  ./client
+  local tags=(-t "${name}:${tag}")
+  [[ "$also_latest" == "yes" && "$tag" != "latest" ]] && tags+=(-t "${name}:latest")
 
-echo "📤 Pushing $SERVER_IMAGE"
-docker push "$SERVER_IMAGE"
+  echo ""
+  echo "🔨  Building ${name}:${tag}  [${PLATFORMS}]"
 
-echo "📤 Pushing $CLIENT_IMAGE"
-docker push "$CLIENT_IMAGE"
+  if [[ "$PUSH" == "1" ]]; then
+    docker buildx build \
+      --platform "$PLATFORMS" \
+      "${tags[@]}" \
+      --push \
+      "$context"
+  else
+    # Local single-arch build (no push)
+    docker build \
+      "${tags[@]}" \
+      "$context"
+  fi
+}
 
-echo "✅ Done!"
+# ── Ensure buildx builder exists (only needed once, idempotent) ───────────
+if [[ "$PUSH" == "1" ]]; then
+  if ! docker buildx inspect multiarch-builder &>/dev/null; then
+    echo "🔧  Creating buildx builder 'multiarch-builder'…"
+    docker buildx create --name multiarch-builder --use
+    docker buildx inspect --bootstrap
+  else
+    docker buildx use multiarch-builder
+  fi
+fi
+
+# Retag latest only when TAG is not already 'latest'
+ALSO_LATEST="no"
+[[ "$TAG" != "latest" ]] && ALSO_LATEST="yes"
+
+build_and_push "$SERVER_IMAGE" "./server" "$TAG" "$ALSO_LATEST"
+build_and_push "$CLIENT_IMAGE" "./client" "$TAG" "$ALSO_LATEST"
+
 echo ""
-echo "Deploy on a server with:"
-echo "  DOCKER_HUB_USER=$DOCKER_HUB_USER TAG=$TAG docker compose up -d"
+echo "✅  Done!"
+echo ""
+echo "   Server : ${SERVER_IMAGE}:${TAG}"
+echo "   Client : ${CLIENT_IMAGE}:${TAG}"
+[[ "$ALSO_LATEST" == "yes" ]] && echo "   (both also tagged as :latest)"
+echo ""
+echo "Deploy with:"
+echo "   TAG=${TAG} docker compose pull && docker compose up -d"
