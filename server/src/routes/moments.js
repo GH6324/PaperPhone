@@ -67,6 +67,7 @@ async function initMomentsTables() {
   console.log('✅ Moments tables ready');
 }
 
+module.exports = router;
 module.exports.initMomentsTables = initMomentsTables;
 
 // ── Helper: enrich moment rows with user info, likes, comments ─────────────
