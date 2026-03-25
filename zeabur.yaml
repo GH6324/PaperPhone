@@ -178,6 +178,7 @@ spec:
         source:
           image: minio/minio:latest
           command:
+            - /usr/bin/minio
             - server
             - /data
             - --console-address
