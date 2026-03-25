@@ -96,56 +96,66 @@ export function renderLogin(root) {
 
       try {
         await window._sodiumPromise;
+        submitBtn.textContent = isRegister ? t('registering') : t('loggingIn');
 
-        // Step 1: Generate keys
-        submitBtn.textContent = t('registering');
-        const ik  = await generateIdentityKeyPair();
-        const spk = await generateSignedPreKey(ik.privateKey);
-        const opks = await Promise.all(
-          Array.from({ length: 10 }, (_, i) =>
-            generateOneTimePreKey().then(k => ({ key_id: i, opk_pub: k.publicKey, _priv: k.privateKey }))
-          )
-        );
-
-        // Step 2: Persist keys to IndexedDB and verify they are actually readable
-        await setKey('ik', ik);
-        await setKey('spk', spk);
-        for (const opk of opks) await setKey(`opk_${opk.key_id}`, { privateKey: opk._priv });
-
-        // Verify IK is readable before proceeding (catches silent IndexedDB failures)
-        const { getKey } = await import('../crypto/keystore.js');
-        const ikVerify = await getKey('ik');
-        if (!ikVerify || !ikVerify.privateKey) {
-          throw new Error('密钥存储失败，请检查浏览器是否允许存储数据（无痕/隐私模式不支持持久化）');
-        }
-
-        const keysPayload = {
-          ik_pub: ik.publicKey, spk_pub: spk.publicKey, spk_sig: spk.signature,
-          kem_pub: ik.publicKey,
-          prekeys: opks.map(({ key_id, opk_pub }) => ({ key_id, opk_pub })),
-        };
-
-        // Step 3: Authenticate with server
+        // Step 1: Authenticate with server first (so login never blocks on key storage)
         let data;
         if (isRegister) {
-          data = await api.register({ username, nickname, password, ...keysPayload });
+          // For register we need keys upfront (server requires them)
+          const ik  = await generateIdentityKeyPair();
+          const spk = await generateSignedPreKey(ik.privateKey);
+          const opks = await Promise.all(
+            Array.from({ length: 10 }, (_, i) =>
+              generateOneTimePreKey().then(k => ({ key_id: i, opk_pub: k.publicKey, _priv: k.privateKey }))
+            )
+          );
+          data = await api.register({
+            username, nickname, password,
+            ik_pub: ik.publicKey, spk_pub: spk.publicKey, spk_sig: spk.signature,
+            kem_pub: ik.publicKey,
+            prekeys: opks.map(({ key_id, opk_pub }) => ({ key_id, opk_pub })),
+          });
           setToken(data.token);
+          // Store keys locally (keystore handles IndexedDB → sessionStorage fallback)
+          await setKey('ik', ik);
+          await setKey('spk', spk);
+          for (const opk of opks) await setKey(`opk_${opk.key_id}`, { privateKey: opk._priv });
         } else {
+          // Login: authenticate first, then generate + upload fresh keys for this device
           data = await api.login({ username, password });
           setToken(data.token);
-          // Upload new device's keys to server — retry once on failure
+
+          submitBtn.textContent = '🔑 正在生成密钥...';
+          const ik  = await generateIdentityKeyPair();
+          const spk = await generateSignedPreKey(ik.privateKey);
+          const opks = await Promise.all(
+            Array.from({ length: 10 }, (_, i) =>
+              generateOneTimePreKey().then(k => ({ key_id: i, opk_pub: k.publicKey, _priv: k.privateKey }))
+            )
+          );
+
+          // Store locally first (3-tier: memory > IndexedDB > sessionStorage)
+          await setKey('ik', ik);
+          await setKey('spk', spk);
+          for (const opk of opks) await setKey(`opk_${opk.key_id}`, { privateKey: opk._priv });
+
+          // Upload to server (retry once if network blip)
+          const keysPayload = {
+            ik_pub: ik.publicKey, spk_pub: spk.publicKey, spk_sig: spk.signature,
+            kem_pub: ik.publicKey,
+            prekeys: opks.map(({ key_id, opk_pub }) => ({ key_id, opk_pub })),
+          };
           try {
             await api.uploadKeys(keysPayload);
           } catch {
-            await new Promise(r => setTimeout(r, 1000));
+            await new Promise(r => setTimeout(r, 1500));
             await api.uploadKeys(keysPayload);
           }
         }
 
         state.user = data.user;
         connect();
-        // Small delay to ensure all async writes fully flush before reload
-        await new Promise(r => setTimeout(r, 300));
+        await new Promise(r => setTimeout(r, 200)); // let storage settle
         window.location.reload();
       } catch (err) {
         errEl.textContent = err.message || t('opFailed');

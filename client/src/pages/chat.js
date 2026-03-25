@@ -233,8 +233,9 @@ export async function renderChat(root, chat) {
         ciphertext = res.ciphertext;
         header = JSON.stringify(res.header);
       } catch (err) {
-        showToast(t('encFailed') + ': ' + err.message);
-        return; // Never send plaintext
+        console.error('[E2EE] encryptMessage failed:', err);
+        showToast(`🔐 ${t('encFailed')}: ${err.message}`, 4000);
+        return;
       }
     }
 
