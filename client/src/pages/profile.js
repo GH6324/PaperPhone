@@ -128,6 +128,15 @@ export function renderProfile(root) {
       if (!confirm(t('logoutConfirm'))) return;
       clearToken();
       disconnect();
+      // Clear all persisted crypto keys from every storage tier
+      try {
+        for (const k of Object.keys(localStorage)) {
+          if (k.startsWith('ppkl_') || k.startsWith('ppk_')) localStorage.removeItem(k);
+        }
+        for (const k of Object.keys(sessionStorage)) {
+          if (k.startsWith('ppkl_') || k.startsWith('ppk_')) sessionStorage.removeItem(k);
+        }
+      } catch {}
       state.user = null;
       state.chats = [];
       state.contacts = [];

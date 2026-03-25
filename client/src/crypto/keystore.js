@@ -1,23 +1,28 @@
 /**
- * KeyStore — persists crypto keys with IndexedDB primary + sessionStorage fallback
+ * KeyStore — persists crypto keys with four-tier fallback
  *
- * Some Android WebViews / private-mode browsers wipe IndexedDB on page reload.
- * sessionStorage survives within the same browser session but is cleared when
- * the tab is closed. This gives us a workable fallback for restricted environments.
+ * Storage order (best to most universal):
+ *   1. In-memory cache  — instant, lives for this page load only
+ *   2. IndexedDB        — persistent across sessions, most browsers
+ *   3. sessionStorage   — survives page reload within same tab, cleared on close
+ *   4. localStorage     — persistent, survives everything, maximum compatibility
  *
- * Key values are serializable objects (plain JS objects with string fields).
+ * Tier 4 (localStorage) stores values as a JSON string. Since PaperPhone is
+ * self-hosted and the keys are only as secure as the JS execution context
+ * (same-origin), this is an acceptable tradeoff for maximum compatibility
+ * with restricted WebView environments (e.g., Via browser on Android).
  */
 
 const DB_NAME = 'paperphone_keys';
 const DB_VERSION = 1;
 const STORE = 'keystore';
-const SS_PREFIX = 'ppk_'; // sessionStorage prefix
+const SS_PREFIX = 'ppk_';   // sessionStorage prefix
+const LS_PREFIX = 'ppkl_';  // localStorage prefix
 
-// ── In-memory cache (fastest, lives only for this page load) ──────────────
+// ── In-memory cache ────────────────────────────────────────────────────────
 const _memCache = new Map();
 
-// ── IndexedDB helpers ─────────────────────────────────────────────────────
-
+// ── IndexedDB ──────────────────────────────────────────────────────────────
 let _dbPromise = null;
 function openDb() {
   if (_dbPromise) return _dbPromise;
@@ -62,58 +67,74 @@ async function idbDelete(name) {
   });
 }
 
-// ── sessionStorage helpers ────────────────────────────────────────────────
-
+// ── sessionStorage ─────────────────────────────────────────────────────────
 function ssSet(name, value) {
-  try {
-    sessionStorage.setItem(SS_PREFIX + name, JSON.stringify(value));
-    return true;
-  } catch { return false; }
+  try { sessionStorage.setItem(SS_PREFIX + name, JSON.stringify(value)); return true; }
+  catch { return false; }
 }
-
 function ssGet(name) {
-  try {
-    const s = sessionStorage.getItem(SS_PREFIX + name);
-    return s ? JSON.parse(s) : null;
-  } catch { return null; }
+  try { const s = sessionStorage.getItem(SS_PREFIX + name); return s ? JSON.parse(s) : null; }
+  catch { return null; }
 }
-
 function ssDel(name) {
   try { sessionStorage.removeItem(SS_PREFIX + name); } catch {}
 }
 
-// ── Public API ────────────────────────────────────────────────────────────
+// ── localStorage (tier 4, maximum compatibility) ────────────────────────────
+function lsSet(name, value) {
+  try { localStorage.setItem(LS_PREFIX + name, JSON.stringify(value)); return true; }
+  catch { return false; }
+}
+function lsGet(name) {
+  try { const s = localStorage.getItem(LS_PREFIX + name); return s ? JSON.parse(s) : null; }
+  catch { return null; }
+}
+function lsDel(name) {
+  try { localStorage.removeItem(LS_PREFIX + name); } catch {}
+}
+
+// ── Public API ─────────────────────────────────────────────────────────────
 
 export async function setKey(name, value) {
-  // Always keep in memory cache for this page load
+  // Tier 1: Always update memory cache
   _memCache.set(name, value);
 
-  // Try IndexedDB first, fall back to sessionStorage
-  try {
-    await idbSet(name, value);
-  } catch {
-    ssSet(name, value);
-  }
+  // Tiers 2-4: persist wherever possible (fire and forget for speed)
+  Promise.resolve().then(async () => {
+    let persisted = false;
+    try { await idbSet(name, value); persisted = true; } catch {}
+    if (!persisted) { persisted = ssSet(name, value); }
+    if (!persisted) { lsSet(name, value); }
+    // Always also write to localStorage as belt-and-suspenders for WebViews
+    lsSet(name, value);
+  });
 }
 
 export async function getKey(name) {
-  // 1. Memory cache (fastest)
+  // Tier 1: memory
   if (_memCache.has(name)) return _memCache.get(name);
 
-  // 2. IndexedDB
+  // Tier 2: IndexedDB
   try {
     const val = await idbGet(name);
-    if (val !== null) {
-      _memCache.set(name, val); // warm cache
+    if (val !== null && val !== undefined) {
+      _memCache.set(name, val);
       return val;
     }
-  } catch { /* fall through */ }
+  } catch {}
 
-  // 3. sessionStorage fallback
+  // Tier 3: sessionStorage
   const ssVal = ssGet(name);
   if (ssVal !== null) {
-    _memCache.set(name, ssVal); // warm cache
+    _memCache.set(name, ssVal);
     return ssVal;
+  }
+
+  // Tier 4: localStorage
+  const lsVal = lsGet(name);
+  if (lsVal !== null) {
+    _memCache.set(name, lsVal);
+    return lsVal;
   }
 
   return undefined;
@@ -123,4 +144,5 @@ export async function deleteKey(name) {
   _memCache.delete(name);
   try { await idbDelete(name); } catch {}
   ssDel(name);
+  lsDel(name);
 }
