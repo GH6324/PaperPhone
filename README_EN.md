@@ -51,10 +51,27 @@ Cryptographic Layer
 
 ## Quick Start
 
+### Option 0: Zeabur One-Click Cloud Deploy
+
+[![Deploy on Zeabur](https://zeabur.com/button.svg)](https://zeabur.com/templates/P2J7Y3?referralCode=619dev)
+
+> [!NOTE]
+> One manual step is required after the template deploys, otherwise login/register won't work:
+> 1. Go to Zeabur Console → **server service** → Environment Variables → copy the value of `ZEABUR_WEB_URL` (e.g. `http://10.43.x.x:3000`)
+> 2. Go to **client service** → Environment Variables → add variable `SERVER_URL` = the value copied above
+> 3. Restart the client service
+
+**Known notes:**
+- On first startup, the server automatically creates all database tables (`CREATE TABLE IF NOT EXISTS`) — no manual SQL import needed
+- Redis runs without a password inside the cluster (intra-cluster network isolation is sufficient)
+- If MySQL access is denied, manually set `DB_PASS` on the server service to the value of `MYSQL_ROOT_PASSWORD` from the MySQL service
+
+---
+
 ### Option 1: Docker Compose (Recommended — no local build needed)
 
 ```bash
-# Clone the repository (config files only; images are pulled from Docker Hub)
+# Clone the repository
 git clone <repo-url> && cd paperphone
 
 # Copy and edit environment variables
@@ -74,18 +91,19 @@ open http://localhost
 > Pre-built images on Docker Hub:
 > - `facilisvelox/paperphone-client:latest`
 > - `facilisvelox/paperphone-server:latest`
+>
+> **Note**: The server automatically initialises the database schema on first startup — no manual SQL import required.
 
 ### Option 2: Manual Local Start
 
 #### 1. Prepare the environment
 
 ```bash
-# Create MySQL database
-mysql -u root -p < server/db/schema.sql
-
 # Copy and edit environment variables
 cp server/.env.example server/.env
 # Fill in DB_HOST / DB_PASS / REDIS_HOST / MINIO_* etc.
+
+# Note: the server auto-runs schema.sql on first startup
 ```
 
 #### 2. Start the backend

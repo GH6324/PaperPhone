@@ -51,10 +51,27 @@
 
 ## 快速启动
 
+### 方式零：Zeabur 一键云部署
+
+[![Deploy on Zeabur](https://zeabur.com/button.svg)](https://zeabur.com/templates/P2J7Y3?referralCode=619dev)
+
+> [!NOTE]
+> 部署完成后需手动完成一步配置，否则注册/登录无法使用：
+> 1. 进入 Zeabur 控制台 → **server 服务** → Environment Variables → 复制 `ZEABUR_WEB_URL` 的值（如 `http://10.43.x.x:3000`）
+> 2. 进入 **client 服务** → Environment Variables → 添加变量 `SERVER_URL` = 上一步复制的值
+> 3. Restart client 服务
+
+**已知注意事项：**
+- 首次启动 server 会自动创建数据库表（`CREATE TABLE IF NOT EXISTS`），无需手动导入 schema
+- Redis 在集群内无需密码，已默认关闭认证
+- 若需配置 MySQL root 密码，可在 server 服务的 `DB_PASS` 里手动填写 MySQL 服务的 `MYSQL_ROOT_PASSWORD`
+
+---
+
 ### 方式一：Docker Compose（推荐，无需本地构建）
 
 ```bash
-# 克隆仓库（仅需配置文件，镜像直接从 Docker Hub 拉取）
+# 克隆仓库
 git clone <repo-url> && cd paperphone
 
 # 复制并编辑环境变量
@@ -74,18 +91,19 @@ open http://localhost
 > 镜像已发布至 Docker Hub：
 > - `facilisvelox/paperphone-client:latest`
 > - `facilisvelox/paperphone-server:latest`
+>
+> **注意**：server 首次启动会自动初始化数据库 schema，无需手动导入 SQL 文件。
 
 ### 方式二：本地手动启动
 
 #### 1. 准备环境
 
 ```bash
-# MySQL 创建数据库
-mysql -u root -p < server/db/schema.sql
-
 # 复制并编辑环境变量
 cp server/.env.example server/.env
 # 填写 DB_HOST / DB_PASS / REDIS_HOST / MINIO_* 等
+
+# 注：server 首次启动会自动执行 schema.sql，无需手动导入
 ```
 
 #### 2. 启动后端
