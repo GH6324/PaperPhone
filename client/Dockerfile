@@ -23,4 +23,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
 
 # Substitute ${SERVER_HOST} only (leave nginx's own $variables intact), then start nginx
 CMD ["/bin/sh", "-c", \
-  "envsubst '${SERVER_HOST}' < /etc/nginx/conf.d/paperphone.conf.template > /etc/nginx/conf.d/paperphone.conf && exec nginx -g 'daemon off;'"]
+  "envsubst '${SERVER_URL}' < /etc/nginx/conf.d/paperphone.conf.template > /etc/nginx/conf.d/paperphone.conf && exec nginx -g 'daemon off;'"]

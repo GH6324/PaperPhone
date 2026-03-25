@@ -278,8 +278,8 @@ spec:
             default: ${CF_CALLS_APP_ID}
           CF_CALLS_APP_SECRET:
             default: ${CF_CALLS_APP_SECRET}
-          SERVER_HOST:
-            default: ${CONTAINER_HOSTNAME}
+          SERVER_URL:
+            default: ${ZEABUR_WEB_URL}
             expose: true
             readonly: true
 
@@ -298,8 +298,8 @@ spec:
             port: 80
             type: HTTP
         env:
-          SERVER_HOST:
-            default: ${SERVER_HOST}
+          SERVER_URL:
+            default: ${SERVER_URL}
 
 localization:
   zh-CN:
