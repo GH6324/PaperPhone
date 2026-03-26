@@ -17,9 +17,9 @@ export function renderLogin(root) {
     screen.className = 'auth-screen';
 
     screen.innerHTML = `
-      <div class="auth-logo-wrap">
-        <img src="/public/icons/icon-192.png" alt="PaperPhone"
-          style="width:56px;height:56px;border-radius:12px;object-fit:cover;"
+      <div class="auth-logo-wrap" style="background:transparent;box-shadow:0 8px 40px rgba(0,0,0,.12);overflow:hidden;">
+        <img src="/public/icons/icon-192.png?v=3" alt="PaperPhone"
+          style="width:96px;height:96px;border-radius:28px;object-fit:cover;"
           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
         <span style="display:none;width:44px;height:44px;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="44" height="44" fill="#fff"><path d="M15.5 1h-8A2.5 2.5 0 0 0 5 3.5v17A2.5 2.5 0 0 0 7.5 23h8a2.5 2.5 0 0 0 2.5-2.5v-17A2.5 2.5 0 0 0 15.5 1zm-4 21c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5-4H7V4h9v14z"/></svg></span>
       </div>
