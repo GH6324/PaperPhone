@@ -87,6 +87,7 @@ CREATE TABLE IF NOT EXISTS messages (
   msg_type    ENUM('text','image','file','voice','video_call','system') NOT NULL DEFAULT 'text',
   created_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   delivered   TINYINT(1)    NOT NULL DEFAULT 0,
+  read_at     DATETIME      DEFAULT NULL,
   INDEX idx_to_undelivered (to_id, delivered, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

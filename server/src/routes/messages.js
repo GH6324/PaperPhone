@@ -14,7 +14,7 @@ router.get('/private/:partnerId', async (req, res, next) => {
     const before = req.query.before ? new Date(parseInt(req.query.before)) : null;
 
     const [rows] = await db.query(
-      `SELECT id, from_id, ciphertext, header, msg_type, created_at
+      `SELECT id, from_id, ciphertext, header, msg_type, created_at, read_at
        FROM messages
        WHERE type = 'private'
          AND ((from_id = ? AND to_id = ?) OR (from_id = ? AND to_id = ?))
@@ -37,7 +37,7 @@ router.get('/group/:groupId', async (req, res, next) => {
     const before = req.query.before ? new Date(parseInt(req.query.before)) : null;
 
     const [rows] = await db.query(
-      `SELECT id, from_id, ciphertext, header, msg_type, created_at
+      `SELECT id, from_id, ciphertext, header, msg_type, created_at, read_at
        FROM messages
        WHERE type = 'group' AND to_id = ?
          ${before ? 'AND created_at < ?' : ''}

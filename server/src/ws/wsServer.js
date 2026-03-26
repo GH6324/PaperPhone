@@ -170,6 +170,31 @@ function initWsServer(httpServer) {
         }
       }
 
+      // ── MSG_READ — mark messages as read ────────────────────────────
+      if (msg.type === 'msg_read' && Array.isArray(msg.msg_ids) && msg.msg_ids.length) {
+        const db = getDb();
+        // Only mark messages addressed to the current user (prevent spoofing)
+        const placeholders = msg.msg_ids.map(() => '?').join(',');
+        await db.query(
+          `UPDATE messages SET read_at = NOW()
+           WHERE id IN (${placeholders}) AND to_id = ? AND read_at IS NULL`,
+          [...msg.msg_ids, ws.userId]
+        );
+        // Relay read receipt to each message's sender
+        const [rows] = await db.query(
+          `SELECT DISTINCT from_id FROM messages WHERE id IN (${placeholders})`,
+          msg.msg_ids
+        );
+        for (const { from_id } of rows) {
+          sendToUser(from_id, {
+            type: 'msg_read',
+            msg_ids: msg.msg_ids,
+            reader: ws.userId,
+            ts: Date.now(),
+          });
+        }
+      }
+
       // ── CALL SIGNALING ────────────────────────────────────────────────
       // Relay call_offer, call_answer, call_reject, call_cancel,
       //        call_end, ice_candidate, call_invite transparently.
@@ -220,7 +245,7 @@ function initWsServer(httpServer) {
 
 async function flushOfflineMessages(userId, ws, db) {
   const [rows] = await db.query(
-    `SELECT id, from_id, to_id, ciphertext, header, msg_type, created_at, type
+    `SELECT id, from_id, to_id, ciphertext, header, msg_type, created_at, read_at, type
      FROM messages
      WHERE to_id = ? AND delivered = 0 AND type = 'private'
      ORDER BY created_at ASC`,
@@ -236,6 +261,7 @@ async function flushOfflineMessages(userId, ws, db) {
       ciphertext: row.ciphertext,
       header: row.header,
       ts: new Date(row.created_at).getTime(),
+      read_at: row.read_at ? new Date(row.read_at).getTime() : null,
       offline: true,
     };
     ws.send(JSON.stringify(envelope));

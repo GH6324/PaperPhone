@@ -16,7 +16,7 @@ export function renderMoments(root) {
     <div class="topbar moments-topbar">
       <button class="icon-btn" id="moments-back">‹</button>
       <div class="topbar-title">${t('moments')}</div>
-      <button class="icon-btn" id="moments-compose">✏️</button>
+      <button class="icon-btn" id="moments-compose"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
     </div>
     <div id="moments-feed" class="moments-feed"></div>
     <div id="moments-loading" class="moments-loading" style="display:none">
@@ -54,7 +54,7 @@ export function renderMoments(root) {
         exhausted = true;
         if (!append) {
           feed.innerHTML = `<div class="moments-empty">
-            <div style="font-size:48px;margin-bottom:12px">🌐</div>
+            <div style="margin-bottom:12px"><svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor" opacity=".4"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg></div>
             <div style="color:var(--text-secondary)">${t('noMoments') || '暂无动态，快去发布吧'}</div>
           </div>`;
         }
@@ -105,7 +105,7 @@ export function renderMoments(root) {
     if (isMine) {
       const del = document.createElement('button');
       del.className = 'moment-delete-btn icon-btn';
-      del.textContent = '🗑';
+      del.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
       del.title = '删除';
       del.onclick = async () => {
         if (!confirm(t('deleteConfirm') || '确认删除这条动态？')) return;
@@ -143,19 +143,19 @@ export function renderMoments(root) {
     actions.className = 'moment-actions';
     const likeBtn = document.createElement('button');
     likeBtn.className = `moment-like-btn${m.viewerLiked ? ' liked' : ''}`;
-    likeBtn.innerHTML = `${m.viewerLiked ? '❤️' : '🤍'} ${m.likes || 0}`;
+    likeBtn.innerHTML = `${m.viewerLiked ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="#FF3B5C"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>' : '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z"/></svg>'} ${m.likes || 0}`;
     likeBtn.onclick = async () => {
       try {
         const r = await api.likeMoment(m.id);
         m.viewerLiked = r.liked;
         m.likes = r.liked ? (m.likes || 0) + 1 : Math.max(0, (m.likes || 0) - 1);
         likeBtn.className = `moment-like-btn${m.viewerLiked ? ' liked' : ''}`;
-        likeBtn.innerHTML = `${m.viewerLiked ? '❤️' : '🤍'} ${m.likes}`;
+        likeBtn.innerHTML = `${m.viewerLiked ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="#FF3B5C"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>' : '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z"/></svg>'} ${m.likes}`;
       } catch { showToast('操作失败'); }
     };
     const cmtBtn = document.createElement('button');
     cmtBtn.className = 'moment-comment-btn';
-    cmtBtn.textContent = `💬 ${(m.comments || []).length}`;
+    cmtBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18z"/></svg> ${(m.comments || []).length}`;
     actions.appendChild(likeBtn);
     actions.appendChild(cmtBtn);
     card.appendChild(actions);
@@ -187,14 +187,15 @@ export function renderMoments(root) {
       const isMine = c.user_id === state.user?.id;
       row.innerHTML = `<span class="comment-author">${c.nickname || c.username}:</span>
         <span class="comment-text">${c.text_content}</span>
-        ${isMine ? `<button class="comment-del-btn icon-btn" data-cid="${c.id}" title="删除">✕</button>` : ''}`;
+        ${isMine ? `<button class="comment-del-btn icon-btn" data-cid="${c.id}" title="删除"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>` : ''}`;
       if (isMine) {
         row.querySelector('.comment-del-btn').onclick = async () => {
           try {
             await api.deleteComment(m.id, c.id);
             m.comments = m.comments.filter(x => x.id !== c.id);
             row.remove();
-            cmtBtn.textContent = `💬 ${m.comments.length}`;
+            cmtBtn.textContent = '';
+            cmtBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18z"/></svg> ${m.comments.length}`;
           } catch { showToast('删除失败'); }
         };
       }
@@ -222,7 +223,7 @@ export function renderMoments(root) {
         m.comments.push({ id: r.id, user_id: state.user.id, text_content: txt,
           nickname: state.user.nickname, username: state.user.username });
         renderComments(cmtSection, m, cmtBtn);
-        cmtBtn.textContent = `💬 ${m.comments.length}`;
+        cmtBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18z"/></svg> ${m.comments.length}`;
         row.remove();
       } catch { showToast('发送失败'); }
     };
@@ -244,7 +245,7 @@ export function renderMoments(root) {
     const next = document.createElement('button');
     next.className = 'lightbox-btn';  next.textContent = '›';
     const close = document.createElement('button');
-    close.className = 'lightbox-close';  close.textContent = '✕';
+    close.className = 'lightbox-close';  close.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>';
     overlay.append(close, prev, img, next);
     document.body.appendChild(overlay);
 
@@ -388,7 +389,7 @@ export function renderMoments(root) {
           img.src = url;
           const rm = document.createElement('button');
           rm.className = 'compose-thumb-rm';
-          rm.innerHTML = '✕';
+          rm.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="#fff"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>';
           rm.onclick = e => {
             e.stopPropagation();
             uploadedUrls = uploadedUrls.filter(u => u !== url);

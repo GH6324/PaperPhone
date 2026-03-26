@@ -21,7 +21,7 @@ export function renderLogin(root) {
         <img src="/public/icons/icon-192.png" alt="PaperPhone"
           style="width:56px;height:56px;border-radius:12px;object-fit:cover;"
           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-        <span style="display:none;font-size:44px">📱</span>
+        <span style="display:none;width:44px;height:44px;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="44" height="44" fill="#fff"><path d="M15.5 1h-8A2.5 2.5 0 0 0 5 3.5v17A2.5 2.5 0 0 0 7.5 23h8a2.5 2.5 0 0 0 2.5-2.5v-17A2.5 2.5 0 0 0 15.5 1zm-4 21c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5-4H7V4h9v14z"/></svg></span>
       </div>
 
       <div class="auth-title">${t('appName')}</div>
@@ -125,7 +125,7 @@ export function renderLogin(root) {
           data = await api.login({ username, password });
           setToken(data.token);
 
-          submitBtn.textContent = '🔑 正在生成密钥...';
+          submitBtn.textContent = t('generatingKeys') || '正在生成密钥...';
           const ik  = await generateIdentityKeyPair();
           const spk = await generateSignedPreKey(ik.privateKey);
           const opks = await Promise.all(
@@ -181,7 +181,7 @@ function openLangPicker(onClose) {
         <div class="lang-option ${code === getLang() ? 'selected' : ''}" data-code="${code}">
           <span class="lang-flag">${getLangFlag(code)}</span>
           <span class="lang-name">${getLangName(code)}</span>
-          ${code === getLang() ? '<span class="lang-check">✓</span>' : ''}
+          ${code === getLang() ? '<span class="lang-check"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg></span>' : ''}
         </div>
       `).join('')}
     </div>

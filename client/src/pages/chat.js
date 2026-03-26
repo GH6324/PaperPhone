@@ -136,6 +136,7 @@ export async function renderChat(root, chat) {
 
   // ── Render bubble ─────────────────────────────────────────────
   let _msgIdMap = {};
+  let _unreadMsgIds = [];
 
   function addBubble(text, fromMe, ts, msgType = 'text', extra = {}) {
     const row = document.createElement('div');
@@ -177,8 +178,8 @@ export async function renderChat(root, chat) {
     timeEl.textContent = d.toTimeString().slice(0, 5);
     if (fromMe) {
       const statusEl = document.createElement('span');
-      statusEl.className = 'msg-status msg-status-sent';
-      statusEl.textContent = '✓';
+      statusEl.className = 'msg-status ' + (extra.read_at ? 'msg-status-read' : 'msg-status-sent');
+      statusEl.textContent = extra.read_at ? '✓✓' : '✓';
       if (extra.msgId) statusEl.dataset.ackId = extra.msgId;
       timeEl.appendChild(statusEl);
     }
@@ -200,21 +201,28 @@ export async function renderChat(root, chat) {
       let extra = {};
 
       if (chat.type === 'private' && !fromMe && row.header) {
-        // Only decrypt messages sent TO me (from the other person)
         const plain = await tryDecrypt(row.ciphertext, row.header);
         if (plain !== null) {
           text = plain;
           if (['image', 'voice', 'file'].includes(row.msg_type)) extra = { url: text };
         }
       } else if (fromMe) {
-        // For my own sent messages: we don't store the plaintext locally,
-        // but we can show the ciphertext won't decrypt — show a visual placeholder
-        // that still indicates it was sent. The bubble text is already shown
-        // optimistically when the message is sent.
         text = t('encryptedMsg');
+        if (row.read_at) extra.read_at = row.read_at;
       }
 
-      addBubble(text, fromMe, row.created_at, row.msg_type, extra);
+      addBubble(text, fromMe, row.created_at, row.msg_type, { ...extra, msgId: row.id });
+
+      // Collect unread incoming messages to mark as read
+      if (!fromMe && !row.read_at && row.id) {
+        _unreadMsgIds.push(row.id);
+      }
+    }
+
+    // Batch-send read receipts for all unread incoming messages
+    if (_unreadMsgIds.length > 0) {
+      send({ type: 'msg_read', msg_ids: _unreadMsgIds });
+      _unreadMsgIds = [];
     }
   } catch (e) { /* ignore load errors */ }
 
@@ -234,7 +242,7 @@ export async function renderChat(root, chat) {
         header = JSON.stringify(res.header);
       } catch (err) {
         console.error('[E2EE] encryptMessage failed:', err);
-        showToast(`🔐 ${t('encFailed')}: ${err.message}`, 4000);
+        showToast(`${t('encFailed')}: ${err.message}`, 4000);
         return;
       }
     }
@@ -317,7 +325,7 @@ export async function renderChat(root, chat) {
       mediaRec.start();
       voiceOverlay = document.createElement('div');
       voiceOverlay.className = 'voice-overlay';
-      voiceOverlay.innerHTML = `<div class="voice-pulse">🎙</div><p>${t('voiceHint')}</p>`;
+      voiceOverlay.innerHTML = `<div class="voice-pulse"><svg viewBox="0 0 24 24" width="32" height="32" fill="#fff"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85A6.01 6.01 0 0 1 11 17.92V20H9v-2.08A6.01 6.01 0 0 1 3.07 11.85c-.08-.49-.49-.85-.97-.85-.61 0-1.07.54-.98 1.14C1.78 16.47 5.5 20 10 20.93V22h4v-1.07c4.5-.93 8.22-4.46 8.88-9A1 1 0 0 0 17.91 11z"/></svg></div><p>${t('voiceHint')}</p>`;
       document.body.appendChild(voiceOverlay);
     } catch { showToast(t('micFailed')); }
   }
@@ -414,6 +422,11 @@ export async function renderChat(root, chat) {
     addBubble(text, false, msg.ts, msg.msg_type || 'text', extra);
     const c = state.chats.find(s => s.id === chat.id);
     if (c) c.lastTs = msg.ts;
+
+    // Immediately mark as read since chat is open
+    if (msg.id) {
+      send({ type: 'msg_read', msg_ids: [msg.id] });
+    }
   }
 
   onEvent('message', handleIncoming);
@@ -427,6 +440,19 @@ export async function renderChat(root, chat) {
     }
   });
 
+  // Handle read receipts from recipient
+  function handleMsgRead({ msg_ids }) {
+    if (!Array.isArray(msg_ids)) return;
+    for (const id of msg_ids) {
+      const statusEl = document.querySelector(`[data-ack-id="${CSS.escape(id)}"]`);
+      if (statusEl) {
+        statusEl.textContent = '✓✓';
+        statusEl.className = 'msg-status msg-status-read';
+      }
+    }
+  }
+  onEvent('msg_read', handleMsgRead);
+
   let typingTimer;
   onEvent('typing', ({ from }) => {
     if (from !== chat.id) return;
@@ -437,6 +463,7 @@ export async function renderChat(root, chat) {
 
   root._cleanup = () => {
     offEvent('message', handleIncoming);
+    offEvent('msg_read', handleMsgRead);
     clearTimeout(typingTimer);
     voiceOverlay?.remove();
     if (emojiPanel) { emojiPanel.remove(); emojiPanel = null; }
@@ -449,7 +476,7 @@ function showImageViewer(src) {
   const viewer = document.createElement('div');
   viewer.className = 'img-viewer';
   viewer.innerHTML = `
-    <div class="img-viewer-close">✕</div>
+    <div class="img-viewer-close"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></div>
     <img src="${src}" alt="image">
   `;
   viewer.querySelector('.img-viewer-close').onclick = () => viewer.remove();

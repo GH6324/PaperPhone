@@ -296,7 +296,7 @@ function _showKeyRepairBanner(getKey, setK) {
     'display:flex;align-items:center;justify-content:center;gap:10px;',
   ].join('');
   banner.innerHTML = `
-    <span>⚠️ 本地密钥丢失，无法加密消息</span>
+    <span><svg viewBox="0 0 24 24" width="16" height="16" fill="#fff" style="vertical-align:middle;margin-right:4px"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg> 本地密钥丢失，无法加密消息</span>
     <button id="repair-keys-btn" style="
       background:#fff;color:#FF3B30;border:none;
       border-radius:8px;padding:5px 12px;font-size:13px;
@@ -326,9 +326,9 @@ function _showKeyRepairBanner(getKey, setK) {
         prekeys: opks.map(({ key_id, opk_pub }) => ({ key_id, opk_pub })),
       });
       banner.remove();
-      showToast('✅ 密钥已生成并上传');
+      showToast(t('keysRegenerated') || '密钥已生成并上传');
     } catch (e) {
-      banner.innerHTML = `<span>❌ 修复失败: ${e.message}</span>`;
+      banner.innerHTML = `<span><svg viewBox="0 0 24 24" width="16" height="16" fill="#fff" style="vertical-align:middle;margin-right:4px"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg> 修复失败: ${e.message}</span>`;
     }
   };
 }

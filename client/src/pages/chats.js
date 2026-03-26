@@ -31,7 +31,7 @@ export function renderChats(root) {
     if (!items.length) {
       listEl.innerHTML = `
         <div class="empty-state">
-          <div class="empty-icon">💬</div>
+          <div class="empty-icon"><svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor" opacity=".5"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></div>
           <div class="empty-title">${t('noChats')}</div>
           <div class="empty-hint">${t('noChatsHint')}</div>
         </div>`;
