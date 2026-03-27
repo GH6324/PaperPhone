@@ -303,3 +303,5 @@ paperphone/
 | `R2_PUBLIC_URL` | R2 公开 URL（可选），设置后文件走 CDN 直链 | — |
 | `CF_CALLS_APP_ID` | Cloudflare Calls App ID（可选） | — |
 | `CF_CALLS_APP_SECRET` | Cloudflare Calls App Secret（可选） | — |
+如果这个项目对你有用的话，请我喝罐可乐吧。
+<img src="https://raw.githubusercontent.com/619dev/PaperPhone/main/%E8%AF%B7%E6%88%91%E5%96%9D%E5%8F%AF%E4%B9%90.jpg" alt="qrcode">
