@@ -87,6 +87,7 @@ export const api = {
   vapidKey:        ()    => req('GET',    '/api/push/vapid-key'),
   pushSubscribe:   (sub) => req('POST',   '/api/push/subscribe', sub),
   pushUnsubscribe: (endpoint) => req('DELETE', '/api/push/subscribe', { endpoint }),
+  registerOneSignal: (player_id, platform) => req('POST', '/api/push/onesignal', { player_id, platform }),
 };
 
 export const WS_URL = (() => {

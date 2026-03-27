@@ -18,6 +18,7 @@ const { v4: uuidv4 } = require('uuid');
 const { getDb } = require('../db/mysql');
 const { getRedis } = require('../db/redis');
 const { pushToUser } = require('../services/push');
+const { pushToUserOneSignal } = require('../services/onesignal');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
 
@@ -133,12 +134,14 @@ function initWsServer(httpServer) {
         if (!delivered) {
           const [senderRows] = await db.query('SELECT nickname, username FROM users WHERE id = ?', [ws.userId]);
           const senderName = senderRows[0]?.nickname || senderRows[0]?.username || 'Someone';
-          pushToUser(msg.to, {
+          const pushPayload = {
             type: 'message',
             title: 'PaperPhone',
             body: `${senderName} sent you a message`,
             data: { type: 'message', from: ws.userId },
-          }).catch(() => {});
+          };
+          pushToUser(msg.to, pushPayload).catch(() => {});
+          pushToUserOneSignal(msg.to, pushPayload).catch(() => {});
         }
         // ACK sender
         if (ws.readyState === WebSocket.OPEN) {

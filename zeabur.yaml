@@ -118,6 +118,19 @@ spec:
       description: >-
         Contact email for VAPID, e.g. mailto:admin@yoursite.com.
 
+    - key: ONESIGNAL_APP_ID
+      type: STRING
+      name: OneSignal App ID (optional)
+      description: >-
+        For native Android/iOS push via Median.co. Get from OneSignal
+        Dashboard → Settings → Keys & IDs.
+
+    - key: ONESIGNAL_REST_KEY
+      type: STRING
+      name: OneSignal REST API Key (optional)
+      description: >-
+        OneSignal REST API key paired with the App ID above.
+
   services:
     # ── MySQL 8 ───────────────────────────────────────────────────────
     - name: MySQL
@@ -286,6 +299,10 @@ spec:
             default: ${VAPID_PRIVATE_KEY}
           VAPID_SUBJECT:
             default: ${VAPID_SUBJECT}
+          ONESIGNAL_APP_ID:
+            default: ${ONESIGNAL_APP_ID}
+          ONESIGNAL_REST_KEY:
+            default: ${ONESIGNAL_REST_KEY}
           SERVER_URL:
             default: ${ZEABUR_WEB_URL}
             expose: true

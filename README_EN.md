@@ -15,6 +15,7 @@ A WeChat-style end-to-end encrypted instant messaging app with stateless ECDH + 
 | 🔐 End-to-End Encryption | Stateless ECDH + XSalsa20-Poly1305 — ephemeral keys per message, forward secrecy |
 | 🗝️ Zero-Knowledge Server | Server stores only ciphertext; private keys never leave the device |
 | 📹 Video & Voice Calls | WebRTC P2P (1:1) + Mesh (group), Cloudflare TURN for NAT traversal |
+| 🔔 Push Notifications | Web Push (VAPID) + OneSignal dual-channel  — reach users even when offline |
 | 🌐 Multi-Language | Chinese, English, Japanese, Korean, French — auto-detect + manual switch |
 | 📱 iOS — No Enterprise Cert | PWA via Safari "Add to Home Screen", works permanently without Apple signing |
 | 💬 Rich Messaging | Text, images, voice messages, 64-emoji panel, delivery receipts, typing indicators |
@@ -155,6 +156,51 @@ CF_CALLS_APP_SECRET=your_app_secret_here
 
 ---
 
+## Push Notification Configuration
+
+Offline message notifications are delivered through **two channels** for maximum delivery rate:
+
+| Channel | Platforms | Configuration |
+|---------|-----------|---------------|
+| Web Push (VAPID) | Browsers (Chrome/Edge/Firefox) + iOS PWA (Safari 16.4+) | VAPID keys |
+| OneSignal | Native Android/iOS apps via Median.co | OneSignal App ID + REST Key |
+
+### Configuring Web Push
+
+1. Generate VAPID keys (one-time):
+
+```bash
+cd server
+npx web-push generate-vapid-keys
+```
+
+2. Add to `server/.env`:
+
+```env
+VAPID_PUBLIC_KEY=your_public_key_here
+VAPID_PRIVATE_KEY=your_private_key_here
+VAPID_SUBJECT=mailto:admin@your-domain.com
+```
+
+3. Restart the server — users can enable notifications from the Settings page
+
+> **iOS users** must first "Add to Home Screen" (PWA), and only iOS 16.4+ is supported.
+
+### Configuring OneSignal (Median.co Native Apps)
+
+1. Create an app on [OneSignal Dashboard](https://onesignal.com) and configure Firebase
+2. Enable OneSignal in Median.co and enter the App ID
+3. Add the OneSignal **App ID** and **REST API Key** to `server/.env`:
+
+```env
+ONESIGNAL_APP_ID=your_onesignal_app_id
+ONESIGNAL_REST_KEY=your_onesignal_rest_api_key
+```
+
+> **When not configured**: push notifications are silently disabled — all other features work normally.
+
+---
+
 ## iOS — Permanent No-Cert Deployment
 
 1. Deploy to a server with an HTTPS domain (required for WebRTC and Web Crypto APIs)
@@ -213,20 +259,24 @@ paperphone/
 │       ├── routes/
 │       │   ├── auth.js         # Register / Login (incl. X3DH public key upload)
 │       │   ├── users.js        # User search / Prekey bundle download
-│       │   ├── friends.js      # Friend requests / Accept
+│       │   ├── friends.js      # Friend requests / Accept (incl. offline push)
 │       │   ├── groups.js       # Group management
 │       │   ├── messages.js     # Historical messages (paginated ciphertext)
 │       │   ├── upload.js       # Cloudflare R2 file upload
 │       │   ├── files.js        # File proxy (when R2_PUBLIC_URL is not set)
 │       │   ├── moments.js      # Moments feed (posts / likes / comments)
-│       │   └── calls.js        # TURN credential issuance
+│       │   ├── calls.js        # TURN credential issuance
+│       │   └── push.js         # Push subscription mgmt (Web Push + OneSignal)
+│       ├── services/
+│       │   ├── push.js         # Web Push VAPID service
+│       │   └── onesignal.js    # OneSignal REST API service
 │       └── ws/
-│           └── wsServer.js     # WebSocket router (messages + call signalling)
+│           └── wsServer.js     # WebSocket router (messages + call signalling + offline push)
 │
 └── client/
-    ├── index.html              # SPA entry + PWA meta tags
+    ├── index.html              # SPA entry + PWA meta + Median push bridge
     ├── manifest.json           # PWA manifest
-    ├── sw.js                   # Service Worker (offline cache)
+    ├── sw.js                   # Service Worker (offline cache + push notifications)
     └── src/
         ├── style.css           # Premium design system (dark/light, glassmorphism)
         ├── app.js              # Router + global state + incoming call listener
@@ -234,7 +284,8 @@ paperphone/
         ├── socket.js           # WebSocket client (auto-reconnect)
         ├── i18n.js             # Multi-language engine (zh / en / ja / ko / fr)
         ├── services/
-        │   └── webrtc.js       # WebRTC manager — CallManager class
+        │   ├── webrtc.js       # WebRTC manager — CallManager class
+        │   └── pushNotification.js  # Push subscription mgmt (Web Push + Median bridge)
         ├── crypto/
         │   ├── ratchet.js      # X3DH + Double Ratchet + ML-KEM-768
         │   └── keystore.js     # IndexedDB private key store
@@ -244,7 +295,7 @@ paperphone/
             ├── chat.js         # Chat window (E2E encryption, call buttons)
             ├── contacts.js     # Contacts (friend requests, online status)
             ├── discover.js     # Discover page
-            ├── profile.js      # Me / Settings (language, key fingerprint, PWA)
+            ├── profile.js      # Me / Settings (language, fingerprint, notifications, PWA)
             └── call.js         # Call UI (incoming / active / multi-party video)
 ```
 
@@ -252,7 +303,7 @@ paperphone/
 
 ## Database Schema
 
-9 tables, auto-created on first server startup (`CREATE TABLE IF NOT EXISTS`):
+11 tables, auto-created on first server startup (`CREATE TABLE IF NOT EXISTS`):
 
 | Table | Purpose |
 |-------|---------|
@@ -265,6 +316,8 @@ paperphone/
 | `moment_images` | Post images (up to 9 per post) |
 | `moment_likes` | Likes (unique per user per post) |
 | `moment_comments` | Comments (≤ 512 chars each) |
+| `push_subscriptions` | Web Push subscriptions (VAPID) |
+| `onesignal_players` | OneSignal device registrations (Median.co) |
 
 ---
 
@@ -303,6 +356,11 @@ What the Server Sees:
 | `R2_PUBLIC_URL` | R2 public base URL (optional) — enables direct CDN links | — |
 | `CF_CALLS_APP_ID` | Cloudflare Calls App ID (optional) | — |
 | `CF_CALLS_APP_SECRET` | Cloudflare Calls App Secret (optional) | — |
+| `VAPID_PUBLIC_KEY` | Web Push VAPID public key (optional) | — |
+| `VAPID_PRIVATE_KEY` | Web Push VAPID private key (optional) | — |
+| `VAPID_SUBJECT` | VAPID contact email (optional) | `mailto:admin@paperphone.app` |
+| `ONESIGNAL_APP_ID` | OneSignal App ID (optional, for Median.co) | — |
+| `ONESIGNAL_REST_KEY` | OneSignal REST API Key (optional) | — |
 
 ---
 

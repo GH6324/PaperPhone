@@ -156,3 +156,21 @@ export async function tryAutoSubscribe() {
     await subscribePush();
   }
 }
+
+/**
+ * Register OneSignal player ID from Median.co native wrapper.
+ * Median calls window.median_onesignal_info() on every page load.
+ */
+export function registerMedianOneSignal(info) {
+  if (!info?.oneSignalUserId) return;
+  const { api: apiClient } = import.meta?.url
+    ? { api: null }  // will be called from global scope
+    : {};
+  // Use dynamic import to avoid circular dependency
+  import('../api.js').then(({ api }) => {
+    api.registerOneSignal(
+      info.oneSignalUserId,
+      info.platform || 'android'
+    ).catch(err => console.warn('OneSignal register failed:', err));
+  });
+}

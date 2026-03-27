@@ -15,6 +15,7 @@
 | 🔐 端对端加密 | 无状态 ECDH + XSalsa20-Poly1305，逐消息临时密钥，前向保密 |
 | 🗝️ 零知识服务器 | 服务器只存储密文，私钥仅在设备本地（四层持久化） |
 | 📹 视频/语音通话 | WebRTC P2P（1:1）+ Mesh（多人），Cloudflare TURN 穿透 |
+| 🔔 消息推送 | Web Push (VAPID) + OneSignal 双通道，离线也能收到通知 |
 | 🌐 多语言 | 中文、英文、日语、韩语、法语（自动检测 + 手动切换） |
 | 📱 iOS 永久免签 | PWA H5 → Safari「添加到主屏幕」，无需企业证书 |
 | 💬 消息功能 | 文字、图片、语音消息、Emoji 面板（64 个）、已读状态 |
@@ -155,6 +156,51 @@ CF_CALLS_APP_SECRET=your_app_secret_here
 
 ---
 
+## 消息推送配置
+
+离线消息通知通过**双通道**推送，最大化消息送达率：
+
+| 通道 | 适用场景 | 配置 |
+|------|----------|------|
+| Web Push (VAPID) | 浏览器 (Chrome/Edge/Firefox) + iOS PWA (Safari 16.4+) | VAPID 密钥 |
+| OneSignal | Median.co 打包的原生 Android/iOS App | OneSignal App ID + REST Key |
+
+### 配置 Web Push
+
+1. 生成 VAPID 密钥（仅需一次）：
+
+```bash
+cd server
+npx web-push generate-vapid-keys
+```
+
+2. 填入 `server/.env`：
+
+```env
+VAPID_PUBLIC_KEY=your_public_key_here
+VAPID_PRIVATE_KEY=your_private_key_here
+VAPID_SUBJECT=mailto:admin@your-domain.com
+```
+
+3. 重启服务器，用户可在设置页开启通知
+
+> **iOS 用户**需先将应用「添加到主屏幕」，且仅 iOS 16.4+ 支持。
+
+### 配置 OneSignal（Median.co 原生 App）
+
+1. 在 [OneSignal Dashboard](https://onesignal.com) 创建 App 并配置 Firebase
+2. 在 Median.co 中启用 OneSignal 并填入 App ID
+3. 将 OneSignal 的 **App ID** 和 **REST API Key** 填入 `server/.env`：
+
+```env
+ONESIGNAL_APP_ID=your_onesignal_app_id
+ONESIGNAL_REST_KEY=your_onesignal_rest_api_key
+```
+
+> **未配置时**：推送功能静默禁用，不影响其他功能。
+
+---
+
 ## iOS 永久免签部署
 
 1. 部署到有 HTTPS 域名的服务器（WebRTC 和加密 API 需要 HTTPS）
@@ -213,20 +259,24 @@ paperphone/
 │       ├── routes/
 │       │   ├── auth.js         # 注册/登录（含 X3DH 公钥上传）
 │       │   ├── users.js        # 用户搜索 / Prekey 下载
-│       │   ├── friends.js      # 好友申请 / 接受
+│       │   ├── friends.js      # 好友申请 / 接受（含离线推送）
 │       │   ├── groups.js       # 群组管理
 │       │   ├── messages.js     # 历史消息（密文分页）
 │       │   ├── upload.js       # Cloudflare R2 文件上传
 │       │   ├── files.js        # 文件代理（R2_PUBLIC_URL 未设时）
 │       │   ├── moments.js      # 朋友圈（动态/点赞/评论）
-│       │   └── calls.js        # TURN 凭据派发
+│       │   ├── calls.js        # TURN 凭据派发
+│       │   └── push.js         # 推送订阅管理（Web Push + OneSignal）
+│       ├── services/
+│       │   ├── push.js         # Web Push VAPID 服务
+│       │   └── onesignal.js    # OneSignal REST API 服务
 │       └── ws/
-│           └── wsServer.js     # WebSocket 路由（含通话信令）
+│           └── wsServer.js     # WebSocket 路由（含通话信令 + 离线推送）
 │
 └── client/
-    ├── index.html              # SPA 入口 + PWA 元数据
+    ├── index.html              # SPA 入口 + PWA 元数据 + Median 推送桥接
     ├── manifest.json           # PWA 清单
-    ├── sw.js                   # Service Worker（离线缓存）
+    ├── sw.js                   # Service Worker（离线缓存 + 推送通知）
     └── src/
         ├── style.css           # Premium 设计系统（暗色/亮色，玻璃拟态）
         ├── app.js              # 路由 + 全局状态 + 来电监听
@@ -234,7 +284,8 @@ paperphone/
         ├── socket.js           # WebSocket 客户端（自动重连）
         ├── i18n.js             # 多语言引擎（zh/en/ja/ko/fr）
         ├── services/
-        │   └── webrtc.js       # WebRTC 管理器（CallManager）
+        │   ├── webrtc.js       # WebRTC 管理器（CallManager）
+        │   └── pushNotification.js  # 推送订阅管理（Web Push + Median 桥接）
         ├── crypto/
         │   ├── ratchet.js      # X3DH + Double Ratchet + ML-KEM-768
         │   └── keystore.js     # 四层私钥持久化（内存/localStorage/sessionStorage/IndexedDB）
@@ -244,7 +295,7 @@ paperphone/
             ├── chat.js         # 聊天窗口（E2E 加密、通话按钮）
             ├── contacts.js     # 通讯录（好友申请/在线状态）
             ├── discover.js     # 发现页
-            ├── profile.js      # 我的/设置（语言、指纹、PWA）
+            ├── profile.js      # 我的/设置（语言、指纹、通知、PWA）
             └── call.js         # 通话 UI（来电/通话中/多人视频）
 ```
 
@@ -252,7 +303,7 @@ paperphone/
 
 ## 数据库结构
 
-共 9 张表，首次启动自动创建（`CREATE TABLE IF NOT EXISTS`）：
+共 11 张表，首次启动自动创建（`CREATE TABLE IF NOT EXISTS`）：
 
 | 表名 | 说明 |
 |------|------|
@@ -265,6 +316,8 @@ paperphone/
 | `moment_images` | 动态图片（每条最多 9 张） |
 | `moment_likes` | 点赞（每用户每条唯一） |
 | `moment_comments` | 评论（最多 512 字/条） |
+| `push_subscriptions` | Web Push 推送订阅（VAPID） |
+| `onesignal_players` | OneSignal 设备注册（Median.co） |
 
 ---
 
@@ -303,6 +356,11 @@ paperphone/
 | `R2_PUBLIC_URL` | R2 公开 URL（可选），设置后文件走 CDN 直链 | — |
 | `CF_CALLS_APP_ID` | Cloudflare Calls App ID（可选） | — |
 | `CF_CALLS_APP_SECRET` | Cloudflare Calls App Secret（可选） | — |
+| `VAPID_PUBLIC_KEY` | Web Push VAPID 公钥（可选） | — |
+| `VAPID_PRIVATE_KEY` | Web Push VAPID 私钥（可选） | — |
+| `VAPID_SUBJECT` | VAPID 联系邮箱（可选） | `mailto:admin@paperphone.app` |
+| `ONESIGNAL_APP_ID` | OneSignal App ID（可选，Median.co） | — |
+| `ONESIGNAL_REST_KEY` | OneSignal REST API Key（可选） | — |
 ---
 如果这个项目对你有用的话，请我喝罐可乐吧。
 <img width=30% height=30% src="https://raw.githubusercontent.com/619dev/PaperPhone/main/%E8%AF%B7%E6%88%91%E5%96%9D%E5%8F%AF%E4%B9%90.jpg" alt="qrcode">

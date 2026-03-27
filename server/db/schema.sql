@@ -163,3 +163,15 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   INDEX idx_push_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ── OneSignal Players (Median.co native push) ────────────────────────────
+CREATE TABLE IF NOT EXISTS onesignal_players (
+  id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id     VARCHAR(36)     NOT NULL,
+  player_id   VARCHAR(64)     NOT NULL,
+  platform    VARCHAR(16)     DEFAULT NULL,
+  created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_player (player_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_os_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

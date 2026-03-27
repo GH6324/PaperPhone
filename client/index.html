@@ -53,6 +53,29 @@
   <div id="app"></div>
   <script type="module" src="/src/app.js"></script>
 
+  <!-- Median.co OneSignal Bridge -->
+  <script>
+    // Median (GoNative) calls this function on every page load with OneSignal info.
+    // Must be a global, synchronously-available function (not in a module).
+    function median_onesignal_info(info) {
+      if (!info || !info.oneSignalUserId) return;
+      // Wait for token to be available, then register player
+      var token = localStorage.getItem('pp_token');
+      if (!token) return;
+      fetch('/api/push/onesignal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token,
+        },
+        body: JSON.stringify({
+          player_id: info.oneSignalUserId,
+          platform: info.platform || 'android',
+        }),
+      }).catch(function() {});
+    }
+  </script>
+
   <!-- Service Worker -->
   <script>
     if ('serviceWorker' in navigator) {

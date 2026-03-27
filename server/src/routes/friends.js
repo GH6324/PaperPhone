@@ -3,6 +3,7 @@ const { getDb } = require('../db/mysql');
 const { authMiddleware } = require('../middlewares/auth');
 const { getWsClients, sendToUser } = require('../ws/wsServer');
 const { pushToUser } = require('../services/push');
+const { pushToUserOneSignal } = require('../services/onesignal');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -53,12 +54,14 @@ router.post('/request', async (req, res, next) => {
     if (!delivered) {
       const [senderRows] = await db.query('SELECT nickname, username FROM users WHERE id = ?', [req.user.id]);
       const senderName = senderRows[0]?.nickname || senderRows[0]?.username || 'Someone';
-      pushToUser(friend_id, {
+      const pushPayload = {
         type: 'friend_request',
         title: 'PaperPhone',
         body: `${senderName} sent you a friend request`,
         data: { type: 'friend_request', from: req.user.id },
-      }).catch(() => {});
+      };
+      pushToUser(friend_id, pushPayload).catch(() => {});
+      pushToUserOneSignal(friend_id, pushPayload).catch(() => {});
     }
     res.json({ ok: true });
   } catch (err) { next(err); }

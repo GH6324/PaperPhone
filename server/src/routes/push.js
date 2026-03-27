@@ -59,4 +59,43 @@ router.delete('/subscribe', authMiddleware, async (req, res) => {
   res.json({ ok: true });
 });
 
+// ── OneSignal Player Registration (Median.co native apps) ────────────────
+router.post('/onesignal', authMiddleware, async (req, res) => {
+  const userId = req.user.id;
+  const { player_id, platform } = req.body;
+
+  if (!player_id) {
+    return res.status(400).json({ error: 'player_id required' });
+  }
+
+  const db = getDb();
+
+  // Upsert: if player_id already exists (maybe under a different user), reassign
+  await db.query(
+    `INSERT INTO onesignal_players (user_id, player_id, platform)
+     VALUES (?, ?, ?)
+     ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), platform = VALUES(platform)`,
+    [userId, player_id, platform || null]
+  );
+
+  res.json({ ok: true });
+});
+
+router.delete('/onesignal', authMiddleware, async (req, res) => {
+  const userId = req.user.id;
+  const { player_id } = req.body;
+
+  const db = getDb();
+  if (player_id) {
+    await db.query(
+      'DELETE FROM onesignal_players WHERE user_id = ? AND player_id = ?',
+      [userId, player_id]
+    );
+  } else {
+    await db.query('DELETE FROM onesignal_players WHERE user_id = ?', [userId]);
+  }
+
+  res.json({ ok: true });
+});
+
 module.exports = router;
