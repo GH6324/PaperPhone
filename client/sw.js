@@ -1,8 +1,9 @@
 /**
  * Service Worker — PaperPhone PWA
  * Cache-first for shell assets, network-first for API
+ * + Web Push notification handler
  */
-const CACHE = 'paperphone-v1';
+const CACHE = 'paperphone-v2';
 const SHELL = [
   '/',
   '/index.html',
@@ -60,5 +61,52 @@ self.addEventListener('fetch', e => {
         return res;
       });
     }).catch(() => caches.match('/index.html'))
+  );
+});
+
+// ── Web Push Handler ─────────────────────────────────────────────────────
+self.addEventListener('push', e => {
+  if (!e.data) return;
+
+  let payload;
+  try { payload = e.data.json(); } catch { return; }
+
+  const title = payload.title || 'PaperPhone';
+  const options = {
+    body: payload.body || '',
+    icon: '/public/icons/icon-192.png',
+    badge: '/public/icons/icon-192.png',
+    tag: payload.type || 'default',
+    renotify: true,
+    data: payload.data || {},
+    vibrate: [100, 50, 100],
+    actions: [],
+  };
+
+  // Collapse multiple unread messages by tag
+  if (payload.type === 'message') {
+    options.tag = `msg-${payload.data?.from || 'unknown'}`;
+  }
+
+  e.waitUntil(
+    self.registration.showNotification(title, options)
+  );
+});
+
+// ── Notification Click Handler ───────────────────────────────────────────
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+      // If a PaperPhone window is already open, focus it
+      for (const client of windowClients) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // Otherwise, open a new window
+      return clients.openWindow('/');
+    })
   );
 });

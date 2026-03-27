@@ -82,6 +82,11 @@ export const api = {
   likeMoment:       (id)     => req('POST', `/api/moments/${id}/like`),
   addComment:       (id, text) => req('POST', `/api/moments/${id}/comments`, { text }),
   deleteComment:    (mid, cid) => req('DELETE', `/api/moments/${mid}/comments/${cid}`),
+
+  // Push Notifications
+  vapidKey:        ()    => req('GET',    '/api/push/vapid-key'),
+  pushSubscribe:   (sub) => req('POST',   '/api/push/subscribe', sub),
+  pushUnsubscribe: (endpoint) => req('DELETE', '/api/push/subscribe', { endpoint }),
 };
 
 export const WS_URL = (() => {

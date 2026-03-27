@@ -12,6 +12,7 @@ import { renderProfile } from './pages/profile.js';
 import { t, onLangChange } from './i18n.js';
 import { callManager } from './services/webrtc.js';
 import { initCallUI } from './pages/call.js';
+import { tryAutoSubscribe } from './services/pushNotification.js';
 
 // ── Global State ──────────────────────────────────────────────────────────
 export const state = {
@@ -146,6 +147,7 @@ export async function navigateAfterLogin(userData) {
   } catch { /* continue with empty lists */ }
   render();
   initCallUI();
+  tryAutoSubscribe().catch(() => {});
 }
 
 function render() {
@@ -275,6 +277,7 @@ async function init() {
 
   render();
   initCallUI();
+  tryAutoSubscribe().catch(() => {});
 
   // Always check for missing keys AFTER render (never inside a try that swallows errors)
   try {

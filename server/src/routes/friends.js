@@ -2,6 +2,7 @@ const express = require('express');
 const { getDb } = require('../db/mysql');
 const { authMiddleware } = require('../middlewares/auth');
 const { getWsClients, sendToUser } = require('../ws/wsServer');
+const { pushToUser } = require('../services/push');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -47,7 +48,18 @@ router.post('/request', async (req, res, next) => {
       [req.user.id, friend_id]
     );
     // Notify recipient via WebSocket if online
-    sendToUser(friend_id, { type: 'friend_request', from: req.user.id });
+    const delivered = sendToUser(friend_id, { type: 'friend_request', from: req.user.id });
+    // Push notification if offline
+    if (!delivered) {
+      const [senderRows] = await db.query('SELECT nickname, username FROM users WHERE id = ?', [req.user.id]);
+      const senderName = senderRows[0]?.nickname || senderRows[0]?.username || 'Someone';
+      pushToUser(friend_id, {
+        type: 'friend_request',
+        title: 'PaperPhone',
+        body: `${senderName} sent you a friend request`,
+        data: { type: 'friend_request', from: req.user.id },
+      }).catch(() => {});
+    }
     res.json({ ok: true });
   } catch (err) { next(err); }
 });

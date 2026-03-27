@@ -99,6 +99,25 @@ spec:
         The Bearer token / App Secret paired with CF_CALLS_APP_ID above.
         Leave blank if you are not using Cloudflare TURN.
 
+    - key: VAPID_PUBLIC_KEY
+      type: STRING
+      name: VAPID Public Key (optional)
+      description: >-
+        Web Push VAPID public key for push notifications. Generate with:
+        npx web-push generate-vapid-keys. Leave blank to disable push.
+
+    - key: VAPID_PRIVATE_KEY
+      type: STRING
+      name: VAPID Private Key (optional)
+      description: >-
+        Web Push VAPID private key paired with the public key above.
+
+    - key: VAPID_SUBJECT
+      type: STRING
+      name: VAPID Subject (optional)
+      description: >-
+        Contact email for VAPID, e.g. mailto:admin@yoursite.com.
+
   services:
     # ── MySQL 8 ───────────────────────────────────────────────────────
     - name: MySQL
@@ -261,6 +280,12 @@ spec:
             default: ${CF_CALLS_APP_ID}
           CF_CALLS_APP_SECRET:
             default: ${CF_CALLS_APP_SECRET}
+          VAPID_PUBLIC_KEY:
+            default: ${VAPID_PUBLIC_KEY}
+          VAPID_PRIVATE_KEY:
+            default: ${VAPID_PRIVATE_KEY}
+          VAPID_SUBJECT:
+            default: ${VAPID_SUBJECT}
           SERVER_URL:
             default: ${ZEABUR_WEB_URL}
             expose: true

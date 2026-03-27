@@ -17,6 +17,7 @@ const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const { getDb } = require('../db/mysql');
 const { getRedis } = require('../db/redis');
+const { pushToUser } = require('../services/push');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
 
@@ -128,6 +129,17 @@ function initWsServer(httpServer) {
            VALUES (?, 'private', ?, ?, ?, ?, ?, ?, ?, ?)`,
           [msgId, ws.userId, msg.to, msg.ciphertext, msg.header || null, msg.self_ciphertext || null, msg.self_header || null, msg.msg_type || 'text', delivered ? 1 : 0]
         );
+        // Push notification when recipient is offline
+        if (!delivered) {
+          const [senderRows] = await db.query('SELECT nickname, username FROM users WHERE id = ?', [ws.userId]);
+          const senderName = senderRows[0]?.nickname || senderRows[0]?.username || 'Someone';
+          pushToUser(msg.to, {
+            type: 'message',
+            title: 'PaperPhone',
+            body: `${senderName} sent you a message`,
+            data: { type: 'message', from: ws.userId },
+          }).catch(() => {});
+        }
         // ACK sender
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'ack', msg_id: msgId, ts: Date.now() }));

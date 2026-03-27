@@ -149,3 +149,17 @@ CREATE TABLE IF NOT EXISTS moment_comments (
   FOREIGN KEY (moment_id) REFERENCES moments(id) ON DELETE CASCADE,
   FOREIGN KEY (user_id)   REFERENCES users(id)   ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ── Push Subscriptions (Web Push / VAPID) ─────────────────────────────────
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id     VARCHAR(36)     NOT NULL,
+  endpoint    TEXT            NOT NULL,
+  p256dh      TEXT            NOT NULL,
+  auth        TEXT            NOT NULL,
+  user_agent  VARCHAR(255)    DEFAULT NULL,
+  created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_user_endpoint (user_id, endpoint(512)),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_push_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

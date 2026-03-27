@@ -137,6 +137,15 @@ const TRANSLATIONS = {
     momentPlaceholder: '这一刻，想和大家分享什么...',
     deleteConfirm: '确认删除？',
     sendMoment: '发布中...',
+    // Push Notifications
+    pushNotifications: '消息通知',
+    pushEnabled: '已开启',
+    pushDisabled: '未开启',
+    pushDenied: '已拒绝',
+    pushDeniedHint: '请在浏览器设置中允许通知权限',
+    pushTurnedOn: '消息通知已开启',
+    pushTurnedOff: '消息通知已关闭',
+    pushFailed: '开启通知失败',
   },
 
   en: {
@@ -264,6 +273,15 @@ const TRANSLATIONS = {
     momentPlaceholder: "What's on your mind?",
     deleteConfirm: 'Delete this post?',
     sendMoment: 'Posting...',
+    // Push Notifications
+    pushNotifications: 'Notifications',
+    pushEnabled: 'On',
+    pushDisabled: 'Off',
+    pushDenied: 'Blocked',
+    pushDeniedHint: 'Please allow notifications in your browser settings',
+    pushTurnedOn: 'Notifications enabled',
+    pushTurnedOff: 'Notifications disabled',
+    pushFailed: 'Failed to enable notifications',
   },
 
   ja: {
@@ -391,6 +409,15 @@ const TRANSLATIONS = {
     momentPlaceholder: '今どんな気持ち？',
     deleteConfirm: 'この投稿を削除しますか？',
     sendMoment: '投稿中...',
+    // Push Notifications
+    pushNotifications: '通知',
+    pushEnabled: 'オン',
+    pushDisabled: 'オフ',
+    pushDenied: 'ブロック済',
+    pushDeniedHint: 'ブラウザ設定で通知を許可してください',
+    pushTurnedOn: '通知が有効になりました',
+    pushTurnedOff: '通知が無効になりました',
+    pushFailed: '通知の有効化に失敗しました',
   },
 
   ko: {
@@ -518,6 +545,15 @@ const TRANSLATIONS = {
     momentPlaceholder: '무슨 생각을 하고 있나요?',
     deleteConfirm: '이 게시물을 삭제하시겠어요?',
     sendMoment: '게시 중...',
+    // Push Notifications
+    pushNotifications: '알림',
+    pushEnabled: '켜짐',
+    pushDisabled: '꺼짐',
+    pushDenied: '차단됨',
+    pushDeniedHint: '브라우저 설정에서 알림을 허용해주세요',
+    pushTurnedOn: '알림이 활성화되었습니다',
+    pushTurnedOff: '알림이 비활성화되었습니다',
+    pushFailed: '알림 활성화에 실패했습니다',
   },
 
   fr: {
@@ -645,6 +681,15 @@ const TRANSLATIONS = {
     momentPlaceholder: 'Quoi de neuf ?',
     deleteConfirm: 'Supprimer cette publication ?',
     sendMoment: 'Publication...',
+    // Push Notifications
+    pushNotifications: 'Notifications',
+    pushEnabled: 'Activées',
+    pushDisabled: 'Désactivées',
+    pushDenied: 'Bloquées',
+    pushDeniedHint: 'Veuillez autoriser les notifications dans les paramètres du navigateur',
+    pushTurnedOn: 'Notifications activées',
+    pushTurnedOff: 'Notifications désactivées',
+    pushFailed: "Impossible d'activer les notifications",
   },
 };
 
