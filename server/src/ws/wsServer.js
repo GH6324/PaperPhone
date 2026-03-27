@@ -86,7 +86,22 @@ function initWsServer(httpServer) {
         try {
           const payload = jwt.verify(msg.token, JWT_SECRET);
           ws.userId = payload.id;
+          ws.sessionId = payload.session_id || null;
           registerClient(payload.id, ws);
+
+          // Check if session is revoked
+          if (ws.sessionId) {
+            const db2 = getDb();
+            const [sessRows] = await db2.query(
+              'SELECT revoked FROM sessions WHERE id = ? AND user_id = ?',
+              [ws.sessionId, payload.id]
+            );
+            if (sessRows.length > 0 && sessRows[0].revoked === 1) {
+              ws.send(JSON.stringify({ type: 'session_revoked' }));
+              ws.close();
+              return;
+            }
+          }
 
           // Mark online
           const db = getDb();
@@ -284,4 +299,18 @@ async function flushOfflineMessages(userId, ws, db) {
   }
 }
 
-module.exports = { initWsServer, sendToUser, sendToGroup, getWsClients };
+/**
+ * Revoke a session via WebSocket — notify the client and close the connection.
+ */
+function revokeSessionWs(userId, sessionId) {
+  const sockets = clients.get(userId);
+  if (!sockets) return;
+  for (const ws of sockets) {
+    if (ws.sessionId === sessionId && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'session_revoked' }));
+      ws.close();
+    }
+  }
+}
+
+module.exports = { initWsServer, sendToUser, sendToGroup, getWsClients, revokeSessionWs };

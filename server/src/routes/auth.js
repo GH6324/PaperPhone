@@ -3,8 +3,30 @@ const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const { getDb } = require('../db/mysql');
 const { signToken } = require('../middlewares/auth');
+const { parseUA } = require('../services/ua-parser');
 
 const router = express.Router();
+
+/**
+ * Create a session record and return a JWT with embedded session_id.
+ */
+async function createSession(userId, username, req) {
+  const db = getDb();
+  const sessionId = uuidv4();
+
+  const ua = req.headers['user-agent'] || '';
+  const { device_name, device_type, os, browser } = parseUA(ua);
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || null;
+
+  await db.query(
+    `INSERT INTO sessions (id, user_id, device_name, device_type, os, browser, ip_address)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [sessionId, userId, device_name, device_type, os, browser, ip]
+  );
+
+  const token = signToken({ id: userId, username, session_id: sessionId });
+  return { token, sessionId };
+}
 
 // POST /api/auth/register
 router.post('/register', async (req, res, next) => {
@@ -32,7 +54,7 @@ router.post('/register', async (req, res, next) => {
       await db.query('INSERT INTO prekeys (user_id, key_id, opk_pub) VALUES ?', [rows]);
     }
 
-    const token = signToken({ id, username });
+    const { token } = await createSession(id, username, req);
     res.status(201).json({ token, user: { id, username, nickname: nickname || username } });
   } catch (err) {
     next(err);
@@ -57,7 +79,7 @@ router.post('/login', async (req, res, next) => {
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
 
     delete user.password;
-    const token = signToken({ id: user.id, username: user.username });
+    const { token } = await createSession(user.id, user.username, req);
     res.json({ token, user });
   } catch (err) {
     next(err);

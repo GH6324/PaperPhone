@@ -66,6 +66,11 @@ export function renderProfile(root) {
           <span class="settings-label">${t('keyFingerprint')}</span>
           <span class="settings-chevron">›</span>
         </div>
+        <div class="settings-item" id="devices-btn">
+          <div class="settings-icon" style="background:#5856D6"><svg viewBox="0 0 24 24" width="18" height="18" fill="#fff"><path d="M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7l-2 3v1h8v-1l-2-3h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 12H3V4h18v10z"/></svg></div>
+          <span class="settings-label">${t('devices')}</span>
+          <span class="settings-chevron">›</span>
+        </div>
       </div>
 
       <div class="card-group" id="g-prefs">
@@ -148,6 +153,19 @@ export function renderProfile(root) {
       } else {
         showToast(t('noKey'));
       }
+    };
+
+    // Devices page
+    root.querySelector('#devices-btn').onclick = () => {
+      import('./devices.js').then(m => {
+        const appEl = document.getElementById('app');
+        // Push the devices sub-page over the current content
+        const page = document.createElement('div');
+        page.className = 'page';
+        m.renderDevices(page);
+        appEl.innerHTML = '';
+        appEl.appendChild(page);
+      });
     };
 
     // Push notification toggle — async check & toggle

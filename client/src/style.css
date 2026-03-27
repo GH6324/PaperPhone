@@ -1403,3 +1403,72 @@ html, body {
   0%   { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
+
+/* ── Devices Page ─────────────────────────────────────────── */
+.device-item {
+  gap: 12px !important;
+}
+.device-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.device-current-icon {
+  background: rgba(7,193,96,.12);
+  color: var(--green);
+}
+.device-info {
+  flex: 1;
+  min-width: 0;
+}
+.device-name {
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.device-detail {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.device-online {
+  font-size: 12px;
+  color: var(--green);
+  font-weight: 500;
+  margin-top: 2px;
+}
+.device-revoke-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background .18s ease, color .18s ease;
+}
+.device-revoke-btn:active {
+  background: rgba(255,59,48,.1);
+  color: var(--red);
+}
+.devices-loading {
+  text-align: center;
+  padding: 40px 16px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+

@@ -88,6 +88,11 @@ export const api = {
   pushSubscribe:   (sub) => req('POST',   '/api/push/subscribe', sub),
   pushUnsubscribe: (endpoint) => req('DELETE', '/api/push/subscribe', { endpoint }),
   registerOneSignal: (player_id, platform) => req('POST', '/api/push/onesignal', { player_id, platform }),
+
+  // Sessions (Device Management)
+  sessions:       ()   => req('GET',    '/api/sessions'),
+  revokeSession:  (id) => req('DELETE', `/api/sessions/${id}`),
+  revokeAllOther: ()   => req('DELETE', '/api/sessions'),
 };
 
 export const WS_URL = (() => {

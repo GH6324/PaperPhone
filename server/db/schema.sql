@@ -175,3 +175,19 @@ CREATE TABLE IF NOT EXISTS onesignal_players (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   INDEX idx_os_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ── Sessions (Login Device Tracking) ─────────────────────────────────────
+CREATE TABLE IF NOT EXISTS sessions (
+  id           VARCHAR(36)   PRIMARY KEY,
+  user_id      VARCHAR(36)   NOT NULL,
+  device_name  VARCHAR(128)  DEFAULT NULL,
+  device_type  VARCHAR(16)   DEFAULT NULL,
+  os           VARCHAR(64)   DEFAULT NULL,
+  browser      VARCHAR(64)   DEFAULT NULL,
+  ip_address   VARCHAR(45)   DEFAULT NULL,
+  last_active  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  revoked      TINYINT(1)    NOT NULL DEFAULT 0,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_sess_user (user_id, revoked)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

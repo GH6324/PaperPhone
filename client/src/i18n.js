@@ -146,6 +146,17 @@ const TRANSLATIONS = {
     pushTurnedOn: '消息通知已开启',
     pushTurnedOff: '消息通知已关闭',
     pushFailed: '开启通知失败',
+    // Devices
+    devices: '已登录设备',
+    currentDevice: '当前设备',
+    otherDevices: '其他设备',
+    revokeDevice: '注销设备',
+    revokeAllOther: '退出所有其他设备',
+    revokeConfirm: '确定要注销此设备的登录？',
+    revokeAllConfirm: '确定要退出除当前设备以外的所有设备？',
+    sessionRevoked: '此设备已被退出登录',
+    noOtherDevices: '没有其他已登录设备',
+    lastActive: '最后活跃',
   },
 
   en: {
@@ -282,6 +293,17 @@ const TRANSLATIONS = {
     pushTurnedOn: 'Notifications enabled',
     pushTurnedOff: 'Notifications disabled',
     pushFailed: 'Failed to enable notifications',
+    // Devices
+    devices: 'Devices',
+    currentDevice: 'This Device',
+    otherDevices: 'Other Devices',
+    revokeDevice: 'Log Out',
+    revokeAllOther: 'Log Out All Other Devices',
+    revokeConfirm: 'Log out this device?',
+    revokeAllConfirm: 'Log out all devices except this one?',
+    sessionRevoked: 'This device has been logged out',
+    noOtherDevices: 'No other active devices',
+    lastActive: 'Last active',
   },
 
   ja: {
@@ -418,6 +440,17 @@ const TRANSLATIONS = {
     pushTurnedOn: '通知が有効になりました',
     pushTurnedOff: '通知が無効になりました',
     pushFailed: '通知の有効化に失敗しました',
+    // Devices
+    devices: 'ログイン中のデバイス',
+    currentDevice: 'このデバイス',
+    otherDevices: '他のデバイス',
+    revokeDevice: 'ログアウト',
+    revokeAllOther: '他の全デバイスからログアウト',
+    revokeConfirm: 'このデバイスからログアウトしますか？',
+    revokeAllConfirm: 'このデバイス以外の全デバイスからログアウトしますか？',
+    sessionRevoked: 'このデバイスはログアウトされました',
+    noOtherDevices: '他のアクティブなデバイスはありません',
+    lastActive: '最終活動',
   },
 
   ko: {
@@ -554,6 +587,17 @@ const TRANSLATIONS = {
     pushTurnedOn: '알림이 활성화되었습니다',
     pushTurnedOff: '알림이 비활성화되었습니다',
     pushFailed: '알림 활성화에 실패했습니다',
+    // Devices
+    devices: '로그인된 기기',
+    currentDevice: '현재 기기',
+    otherDevices: '다른 기기',
+    revokeDevice: '로그아웃',
+    revokeAllOther: '다른 모든 기기에서 로그아웃',
+    revokeConfirm: '이 기기에서 로그아웃하시겠습니까?',
+    revokeAllConfirm: '이 기기를 제외한 모든 기기에서 로그아웃하시겠습니까?',
+    sessionRevoked: '이 기기에서 로그아웃되었습니다',
+    noOtherDevices: '다른 활성 기기가 없습니다',
+    lastActive: '마지막 활동',
   },
 
   fr: {
@@ -690,6 +734,17 @@ const TRANSLATIONS = {
     pushTurnedOn: 'Notifications activées',
     pushTurnedOff: 'Notifications désactivées',
     pushFailed: "Impossible d'activer les notifications",
+    // Devices
+    devices: 'Appareils connectés',
+    currentDevice: 'Cet appareil',
+    otherDevices: 'Autres appareils',
+    revokeDevice: 'Déconnecter',
+    revokeAllOther: 'Déconnecter tous les autres appareils',
+    revokeConfirm: 'Déconnecter cet appareil ?',
+    revokeAllConfirm: 'Déconnecter tous les appareils sauf celui-ci ?',
+    sessionRevoked: 'Cet appareil a été déconnecté',
+    noOtherDevices: 'Aucun autre appareil actif',
+    lastActive: 'Dernière activité',
   },
 };
 

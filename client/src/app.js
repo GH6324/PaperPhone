@@ -2,10 +2,10 @@
  * Main App Router — PaperPhone
  * Single-page app with 4-tab navigation
  */
-import { getToken, api } from './api.js';
-import { connect, onEvent } from './socket.js';
+import { getToken, clearToken, api } from './api.js';
+import { connect, disconnect, onEvent } from './socket.js';
 import { renderLogin } from './pages/login.js';
-import { renderChats } from './pages/chats.js';
+import { renderChats, refreshChatList } from './pages/chats.js';
 import { renderContacts } from './pages/contacts.js';
 import { renderDiscover } from './pages/discover.js';
 import { renderProfile } from './pages/profile.js';
@@ -188,9 +188,10 @@ function setupGlobalSocketHandlers() {
       chat.unread = (chat.unread || 0) + 1;
       chat.lastMsg = t('encryptedMsg');
       chat.lastTs = msg.ts;
-      // re-render tab dot
+      // re-render tab bar badge + chat list
       const tabBar = root.querySelector('.tabbar');
       if (tabBar) root.replaceChild(buildTabBar(state.activeTab), tabBar);
+      refreshChatList();
     } else if (!chat) {
       // New conversation — try to find sender in contacts for display name
       const contact = state.contacts.find(c => c.id === key);
@@ -203,6 +204,10 @@ function setupGlobalSocketHandlers() {
         lastTs: msg.ts,
         unread: 1,
       });
+      // re-render tab bar badge + chat list
+      const tabBar = root.querySelector('.tabbar');
+      if (tabBar) root.replaceChild(buildTabBar(state.activeTab), tabBar);
+      refreshChatList();
     }
   });
   onEvent('friend_request', () => {
@@ -213,6 +218,22 @@ function setupGlobalSocketHandlers() {
     if (tabBar) root.replaceChild(buildTabBar(state.activeTab), tabBar);
   });
   onEvent('friend_accepted', () => showToast(t('friendAccepted')));
+
+  // ── Session Revoked (device kicked by another session) ───────────────
+  onEvent('session_revoked', () => {
+    clearToken();
+    disconnect();
+    try {
+      for (const k of Object.keys(localStorage)) {
+        if (k.startsWith('ppkl_') || k.startsWith('ppk_')) localStorage.removeItem(k);
+      }
+    } catch {}
+    state.user = null;
+    state.chats = [];
+    state.contacts = [];
+    alert(t('sessionRevoked'));
+    window.location.reload();
+  });
 
   // Real-time online/offline status
   onEvent('online', ({ user_id }) => {
