@@ -8,7 +8,7 @@ spec:
     A WeChat-style, end-to-end encrypted IM app with stateless ECDH E2EE,
     WebRTC video/voice calls, Cloudflare R2 file storage, and iOS PWA
     support — fully self-hostable.
-  icon: https://raw.githubusercontent.com/facilisvelox/paperphone/main/client/icons/icon-192.png
+  icon: https://raw.githubusercontent.com/619dev/PaperPhone/main/client/public/icons/icon-192.png
   tags:
     - Chat
     - Security
@@ -207,7 +207,7 @@ spec:
 
     # ── PaperPhone Server (Node.js) ────────────────────────────────
     - name: server
-      icon: https://raw.githubusercontent.com/zeabur/service-icons/main/marketplace/node.svg
+      icon: https://raw.githubusercontent.com/619dev/PaperPhone/main/client/public/icons/icon-192.png
       template: PREBUILT
       dependencies:
         - MySQL
@@ -268,7 +268,7 @@ spec:
 
     # ── PaperPhone Client (Nginx / PWA) ────────────────────────────
     - name: client
-      icon: https://raw.githubusercontent.com/zeabur/service-icons/main/marketplace/nginx.svg
+      icon: https://raw.githubusercontent.com/619dev/PaperPhone/main/client/public/icons/icon-192.png
       template: PREBUILT
       domainKey: PUBLIC_DOMAIN
       dependencies:
