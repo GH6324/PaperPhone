@@ -21,8 +21,9 @@
   <!-- libsodium (local — no CDN dependency) -->
   <script>
     window._sodiumPromise = new Promise((resolve, reject) => {
+      const TIMEOUT = 30000; // 30s for slow mobile networks
       const timer = setTimeout(() =>
-        reject(new Error('Crypto library load timeout')), 15000);
+        reject(new Error('Crypto library load timeout')), TIMEOUT);
 
       function loadScript(src) {
         return new Promise((res, rej) => {
@@ -34,16 +35,23 @@
         });
       }
 
-      // Must load libsodium.js first, then the wrappers layer on top
-      loadScript('/public/js/libsodium.js')
-        .then(() => loadScript('/public/js/libsodium-wrappers.js'))
-        .then(async () => {
-          clearTimeout(timer);
-          await window.sodium.ready;
-          window._sodium = window.sodium;
-          resolve(window.sodium);
-        })
-        .catch(e => { clearTimeout(timer); reject(e); });
+      function tryLoad(attempt) {
+        const bust = attempt > 0 ? ('?v=' + Date.now()) : '';
+        return loadScript('/public/js/libsodium.js' + bust)
+          .then(() => loadScript('/public/js/libsodium-wrappers.js' + bust))
+          .then(async () => {
+            clearTimeout(timer);
+            await window.sodium.ready;
+            window._sodium = window.sodium;
+            resolve(window.sodium);
+          });
+      }
+
+      // Try once, retry with cache-bust on failure
+      tryLoad(0).catch(() => tryLoad(1)).catch(e => {
+        clearTimeout(timer);
+        reject(e);
+      });
     });
   </script>
 

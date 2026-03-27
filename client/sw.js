@@ -3,7 +3,7 @@
  * Cache-first for shell assets, network-first for API
  * + Web Push notification handler
  */
-const CACHE = 'paperphone-v2';
+const CACHE = 'paperphone-v3';
 const SHELL = [
   '/',
   '/index.html',
