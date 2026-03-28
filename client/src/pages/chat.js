@@ -229,6 +229,19 @@ export async function renderChat(root, chat) {
     msgArea.scrollTop = msgArea.scrollHeight;
   }
 
+  // ── Group chat warning banner ──────────────────────────────────
+  if (chat.type === 'group') {
+    const banner = document.createElement('div');
+    banner.className = 'group-warning-banner';
+    banner.innerHTML = `
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+        <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+      </svg>
+      <span>${t('groupChatWarning')}</span>
+    `;
+    msgArea.appendChild(banner);
+  }
+
   // ── Load history ──────────────────────────────────────────────
   try {
     const history = chat.type === 'group'
