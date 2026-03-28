@@ -109,6 +109,10 @@ export const api = {
   sessions:       ()   => req('GET',    '/api/sessions'),
   revokeSession:  (id) => req('DELETE', `/api/sessions/${id}`),
   revokeAllOther: ()   => req('DELETE', '/api/sessions'),
+
+  // Stickers (Telegram proxy)
+  stickerSet:    (name) => req('GET', `/api/stickers/set/${encodeURIComponent(name)}`),
+  stickerFileUrl: (fileId) => `${BASE}/api/stickers/file/${encodeURIComponent(fileId)}`,
 };
 
 export const WS_URL = (() => {

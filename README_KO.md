@@ -23,7 +23,7 @@ WeChat 스타일의 종단간 암호화 인스턴트 메시징 앱. 무상태 EC
 | 🔔 알림 | Web Push (VAPID) + OneSignal 이중 채널 — 오프라인에서도 알림 수신 |
 | 🌐 다국어 | 중국어·영어·일본어·한국어·프랑스어·독일어·러시아어·스페인어 (자동 감지 + 수동 전환) |
 | 📱 iOS — 기업 인증서 불필요 | Safari "홈 화면에 추가"를 통한 PWA, Apple 서명 없이 영구 작동 |
-| 💬 풍부한 메시징 | 텍스트, 이미지, 음성 메시지, 이모지 패널 (64종), 읽음 확인 |
+| 💬 풍부한 메시징 | 텍스트, 이미지, 음성 메시지, 이모지 패널 (200+종, 8분류), Telegram 스티커 팩, 읽음 확인 |
 | 🌐 모먼트 | 텍스트 + 최대 9장 사진, 좋아요 (친구 아바타 표시), 댓글, 태그 기반 공개 범위 제어 |
 | 🏷️ 친구 태그 | 친구에게 여러 태그 할당 (12색 프리셋), 태그별 연락처 필터링 |
 | 🗂️ R2 오브젝트 스토리지 | Cloudflare R2로 이미지/음성 파일 저장 — 선택적 공개 CDN URL |
@@ -313,6 +313,7 @@ server {
 | `VAPID_SUBJECT` | VAPID 연락처 이메일 (선택) | `mailto:admin@paperphone.app` |
 | `ONESIGNAL_APP_ID` | OneSignal App ID (선택, Median.co용) | — |
 | `ONESIGNAL_REST_KEY` | OneSignal REST API Key (선택) | — |
+| `TELEGRAM_BOT_TOKEN` | Telegram Bot Token (선택, 스티커 팩 프록시) | — |
 
 ---
 

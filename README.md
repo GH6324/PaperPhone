@@ -23,7 +23,7 @@
 | 🔔 消息推送 | Web Push (VAPID) + OneSignal 双通道，离线也能收到通知 |
 | 🌐 多语言 | 中文、英文、日语、韩语、法语、德语、俄语、西班牙语（自动检测 + 手动切换） |
 | 📱 iOS 永久免签 | PWA H5 → Safari「添加到主屏幕」，无需企业证书 |
-| 💬 消息功能 | 文字、图片、语音消息、Emoji 面板（64 个）、已读状态 |
+| 💬 消息功能 | 文字、图片、语音消息、Emoji 面板（200+，8 分类）、Telegram 贴纸包、已读状态 |
 | 🌐 朋友圈 | 发动态（文字+最多9张图）、点赞（显示好友头像）、评论、标签可见性控制 |
 | 🏷️ 好友标签 | 为好友设置多个标签（12色预设调色板），按标签分类筛选通讯录 |
 | 🗂️ R2 对象存储 | Cloudflare R2 存储图片/语音，可选公开 CDN 直链 |
@@ -272,7 +272,8 @@ paperphone/
 │       │   ├── files.js        # 文件代理（R2_PUBLIC_URL 未设时）
 │       │   ├── moments.js      # 朋友圈（动态/点赞/评论）
 │       │   ├── calls.js        # TURN 凭据派发
-│       │   └── push.js         # 推送订阅管理（Web Push + OneSignal）
+│       │   ├── push.js         # 推送订阅管理（Web Push + OneSignal）
+│       │   └── stickers.js     # Telegram 贴纸包代理（缓存）
 │       ├── services/
 │       │   ├── push.js         # Web Push VAPID 服务
 │       │   └── onesignal.js    # OneSignal REST API 服务
@@ -369,6 +370,7 @@ paperphone/
 | `VAPID_SUBJECT` | VAPID 联系邮箱（可选） | `mailto:admin@paperphone.app` |
 | `ONESIGNAL_APP_ID` | OneSignal App ID（可选，Median.co） | — |
 | `ONESIGNAL_REST_KEY` | OneSignal REST API Key（可选） | — |
+| `TELEGRAM_BOT_TOKEN` | Telegram Bot Token（可选，贴纸包代理） | — |
 ---
 如果这个项目对你有用的话，请我喝罐可乐吧。
 <img width=30% height=30% src="https://raw.githubusercontent.com/619dev/PaperPhone/main/%E8%AF%B7%E6%88%91%E5%96%9D%E5%8F%AF%E4%B9%90.jpg" alt="qrcode">

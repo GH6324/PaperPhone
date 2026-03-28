@@ -9,6 +9,9 @@
 # Prerequisites:
 #   docker login
 #   docker buildx create --use --name multiarch-builder  # only needed once
+#
+# Environment:
+#   Copy server/.env.example → server/.env and fill in secrets before deploying.
 
 set -euo pipefail
 
@@ -20,6 +23,12 @@ PLATFORMS="${PLATFORMS:-linux/amd64,linux/arm64}"
 
 SERVER_IMAGE="${REPO}/paperphone-server"
 CLIENT_IMAGE="${REPO}/paperphone-client"
+
+# ── Pre-flight checks ────────────────────────────────────────────────────
+if [[ ! -f "./server/.env" && ! -f "./server/.env.example" ]]; then
+  echo "⚠️  No server/.env or server/.env.example found."
+  echo "   Create one before deploying: cp server/.env.example server/.env"
+fi
 
 # ── Helper ────────────────────────────────────────────────────────────────
 build_and_push() {
@@ -71,4 +80,6 @@ echo "   Client : ${CLIENT_IMAGE}:${TAG}"
 [[ "$ALSO_LATEST" == "yes" ]] && echo "   (both also tagged as :latest)"
 echo ""
 echo "Deploy with:"
+echo "   cp server/.env.example server/.env  # fill in secrets"
 echo "   TAG=${TAG} docker compose pull && docker compose up -d"
+

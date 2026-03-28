@@ -22,7 +22,7 @@ A WeChat-style end-to-end encrypted instant messaging app with stateless ECDH + 
 | 🔔 Push Notifications | Web Push (VAPID) + OneSignal dual-channel  — reach users even when offline |
 | 🌐 Multi-Language | Chinese, English, Japanese, Korean, French, German, Russian, Spanish — auto-detect + manual switch |
 | 📱 iOS — No Enterprise Cert | PWA via Safari "Add to Home Screen", works permanently without Apple signing |
-| 💬 Rich Messaging | Text, images, voice messages, 64-emoji panel, delivery receipts, typing indicators |
+| 💬 Rich Messaging | Text, images, voice messages, 200+ emoji panel (8 categories), Telegram sticker packs, delivery receipts, typing indicators |
 | 🌐 Moments | WeChat-style social feed: text + up to 9 photos, likes (friend avatars), comments, tag-based visibility control |
 | 🏷️ Friend Tags | Assign multiple tags to friends (12-color preset palette), filter contacts by tag |
 | 🗂️ R2 Object Storage | Cloudflare R2 for image/voice files — optional public CDN URL |
@@ -271,7 +271,8 @@ paperphone/
 │       │   ├── files.js        # File proxy (when R2_PUBLIC_URL is not set)
 │       │   ├── moments.js      # Moments feed (posts / likes / comments)
 │       │   ├── calls.js        # TURN credential issuance
-│       │   └── push.js         # Push subscription mgmt (Web Push + OneSignal)
+│       │   ├── push.js         # Push subscription mgmt (Web Push + OneSignal)
+│       │   └── stickers.js     # Telegram sticker pack proxy (cached)
 │       ├── services/
 │       │   ├── push.js         # Web Push VAPID service
 │       │   └── onesignal.js    # OneSignal REST API service
@@ -368,6 +369,7 @@ What the Server Sees:
 | `VAPID_SUBJECT` | VAPID contact email (optional) | `mailto:admin@paperphone.app` |
 | `ONESIGNAL_APP_ID` | OneSignal App ID (optional, for Median.co) | — |
 | `ONESIGNAL_REST_KEY` | OneSignal REST API Key (optional) | — |
+| `TELEGRAM_BOT_TOKEN` | Telegram Bot Token (optional, sticker pack proxy) | — |
 
 ---
 

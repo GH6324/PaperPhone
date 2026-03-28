@@ -23,7 +23,7 @@ Una aplicación de mensajería instantánea cifrada de extremo a extremo estilo 
 | 🔔 Notificaciones push | Web Push (VAPID) + OneSignal canal doble |
 | 🌐 Multilingüe | ZH/EN/JA/KO/FR/DE/RU/ES — detección automática + selección manual |
 | 📱 iOS sin certificado empresarial | PWA vía Safari "Añadir a inicio", sin firma de Apple |
-| 💬 Mensajería rica | Texto, imágenes, mensajes de voz, 64 emojis, confirmaciones de lectura |
+| 💬 Mensajería rica | Texto, imágenes, mensajes de voz, 200+ emojis (8 categorías), packs de stickers Telegram, confirmaciones de lectura |
 | 🌐 Momentos | Feed social: texto + hasta 9 fotos, likes (avatares de amigos), comentarios, visibilidad por etiquetas |
 | 🏷️ Etiquetas de amigos | Múltiples etiquetas por amigo (paleta de 12 colores), filtrar contactos por etiqueta |
 | 🗂️ Almacenamiento R2 | Cloudflare R2 para imágenes/audio — URL CDN opcional |
@@ -174,6 +174,7 @@ El servidor ve: ✅ texto cifrado + metadatos de enrutamiento  ❌ texto plano /
 | `VAPID_PRIVATE_KEY` | Clave privada VAPID (opc.) | — |
 | `ONESIGNAL_APP_ID` | OneSignal App ID (opc.) | — |
 | `ONESIGNAL_REST_KEY` | OneSignal REST Key (opc.) | — |
+| `TELEGRAM_BOT_TOKEN` | Telegram Bot Token (opc., proxy de stickers) | — |
 
 ---
 

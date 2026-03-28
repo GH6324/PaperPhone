@@ -23,7 +23,7 @@ Eine Instant-Messaging-App im WeChat-Stil mit Ende-zu-Ende-Verschlüsselung übe
 | 🔔 Push-Benachrichtigungen | Web Push (VAPID) + OneSignal Dual-Kanal |
 | 🌐 Mehrsprachig | ZH/EN/JA/KO/FR/DE/RU/ES — automatische Erkennung + manuelle Umschaltung |
 | 📱 iOS ohne Unternehmenszertifikat | PWA über Safari „Zum Home-Bildschirm", funktioniert dauerhaft ohne Apple-Signatur |
-| 💬 Rich Messaging | Text, Bilder, Sprachnachrichten, 64-Emoji-Panel, Lesebestätigungen |
+| 💬 Rich Messaging | Text, Bilder, Sprachnachrichten, 200+ Emoji-Panel (8 Kategorien), Telegram-Stickerpakete, Lesebestätigungen |
 | 🌐 Momente | Sozialer Feed: Text + bis zu 9 Fotos, Likes (Freunde-Avatare), Kommentare, Tag-basierte Sichtbarkeit |
 | 🏷️ Freunde-Tags | Mehrere Tags pro Freund (12-Farben-Palette), Kontakte nach Tags filtern |
 | 🗂️ R2-Speicher | Cloudflare R2 für Bild-/Audiodateien — optionale CDN-URL |
@@ -174,6 +174,7 @@ Server sieht: ✅ Chiffretext + Routing-Metadaten  ❌ Klartext / private Schlü
 | `VAPID_PRIVATE_KEY` | VAPID privater Schlüssel (optional) | — |
 | `ONESIGNAL_APP_ID` | OneSignal App ID (optional) | — |
 | `ONESIGNAL_REST_KEY` | OneSignal REST Key (optional) | — |
+| `TELEGRAM_BOT_TOKEN` | Telegram Bot Token (optional, Sticker-Proxy) | — |
 
 ---
 

@@ -174,8 +174,11 @@ export async function renderChat(root, chat) {
     if (extra.msgId) _msgIdMap[extra.msgId] = row;
 
     let content = '';
+    const isSticker = msgType === 'sticker';
     if (msgType === 'image') {
       content = `<img class="bubble-image" src="${esc(extra.url || text)}" alt="image">`;
+    } else if (isSticker) {
+      content = `<img class="bubble-sticker" src="${esc(extra.url || text)}" alt="sticker">`;
     } else if (msgType === 'voice') {
       content = `<div class="bubble-voice">
         <button class="voice-play-btn" data-src="${esc(extra.url || text)}">▶</button>
@@ -196,18 +199,20 @@ export async function renderChat(root, chat) {
       senderLabel.textContent = extra.senderName || '?';
       wrapper.appendChild(senderLabel);
       const bubble = document.createElement('div');
-      bubble.className = 'bubble';
+      bubble.className = `bubble${isSticker ? ' sticker-bubble' : ''}`;
       bubble.innerHTML = content;
       wrapper.appendChild(bubble);
       row.appendChild(wrapper);
       if (msgType === 'image') bubble.querySelector('.bubble-image')?.addEventListener('click', e => showImageViewer(e.target.src));
+      if (isSticker) bubble.querySelector('.bubble-sticker')?.addEventListener('click', e => showImageViewer(e.target.src));
       if (msgType === 'voice') bubble.querySelector('.voice-play-btn')?.addEventListener('click', e => new Audio(e.currentTarget.dataset.src).play());
     } else {
       if (!fromMe) row.appendChild(avatarEl(chat.name, chat.avatar, 'avatar-sm'));
       const bubble = document.createElement('div');
-      bubble.className = 'bubble';
+      bubble.className = `bubble${isSticker ? ' sticker-bubble' : ''}`;
       bubble.innerHTML = content;
       if (msgType === 'image') bubble.querySelector('.bubble-image')?.addEventListener('click', e => showImageViewer(e.target.src));
+      if (isSticker) bubble.querySelector('.bubble-sticker')?.addEventListener('click', e => showImageViewer(e.target.src));
       if (msgType === 'voice') bubble.querySelector('.voice-play-btn')?.addEventListener('click', e => new Audio(e.currentTarget.dataset.src).play());
       row.appendChild(bubble);
     }
@@ -256,20 +261,20 @@ export async function renderChat(root, chat) {
       if (chat.type === 'group') {
         // Group messages are plain text (not encrypted)
         text = row.ciphertext || '';
-        if (['image', 'voice', 'file'].includes(row.msg_type)) extra = { url: text };
+        if (['image', 'voice', 'file', 'sticker'].includes(row.msg_type)) extra = { url: text };
         extra.senderName = row.from_nickname || '?';
         extra.senderAvatar = row.from_avatar || null;
       } else if (chat.type === 'private' && !fromMe && row.header) {
         const plain = await tryDecrypt(row.ciphertext, row.header);
         if (plain !== null) {
           text = plain;
-          if (['image', 'voice', 'file'].includes(row.msg_type)) extra = { url: text };
+          if (['image', 'voice', 'file', 'sticker'].includes(row.msg_type)) extra = { url: text };
         }
       } else if (chat.type === 'private' && fromMe && row.self_ciphertext && row.self_header) {
         const plain = await tryDecrypt(row.self_ciphertext, row.self_header);
         if (plain !== null) {
           text = plain;
-          if (['image', 'voice', 'file'].includes(row.msg_type)) extra = { url: text };
+          if (['image', 'voice', 'file', 'sticker'].includes(row.msg_type)) extra = { url: text };
         }
         if (row.read_at) extra.read_at = row.read_at;
       } else if (fromMe) {
@@ -330,7 +335,7 @@ export async function renderChat(root, chat) {
       client_id: msgId,
     });
     const c = state.chats.find(s => s.id === chat.id);
-    if (c) { c.lastMsg = msgType === 'text' ? text : t('imageLabel'); c.lastTs = Date.now(); }
+    if (c) { c.lastMsg = msgType === 'text' ? text : (msgType === 'sticker' ? '[Sticker]' : t('imageLabel')); c.lastTs = Date.now(); }
   }
 
   // ── Input events ──────────────────────────────────────────────
@@ -420,60 +425,297 @@ export async function renderChat(root, chat) {
     mediaRec.stream.getTracks().forEach(t => t.stop());
   }
 
-  // Emoji picker
-  const EMOJIS = [
-    '😊','😂','🥰','😎','😭','😅','😇','🤣','😍','😘','🥳','😁','🤗','😜','🤩','🥺',
-    '👍','👎','👏','🙌','🙏','💪','🤝','✌️','🤙','🫶','❤️','💔','💕','💯','🔥','✨',
-    '🎉','🎊','🎁','🎈','🎶','🎵','📸','💡','🌟','⭐','🌈','☀️','🌙','❄️','🍕','🍜',
-    '😈','👻','🤖','💩','🐱','🐶','🌸','🌺','🍀','🦋','💎','🚀','⚡','🌊','🏆','🎯',
+  // ═══ Emoji / Sticker Panel ═══════════════════════════════════════
+  const EMOJI_CATEGORIES = [
+    { icon: '😊', label: 'Smileys', emojis: ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','😉','😊','😇','🥰','😍','🤩','😘','😗','☺️','😚','😙','🥲','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🫡','🤫','🤔','🫠','🤐','🤨','😐','😑','😶','🫥','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🥴','😵','🤯','🥶','🥵','😱','😨','😰','😥','😢','😭','😤','😠','😡','🤬','😈','👿','💀','☠️','💩','🤡','👹','👺','👻','👽','👾','🤖'] },
+    { icon: '👋', label: 'Gestures', emojis: ['👋','🤚','🖐️','✋','🖖','🫱','🫲','🫳','🫴','👌','🤌','🤏','✌️','🤞','🫰','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','🫵','👍','👎','✊','👊','🤛','🤜','👏','🙌','🫶','👐','🤲','🤝','🙏','💪','🦵','🦶','👂','🦻','👃','🧠','🦷','🦴','👀','👁️','👅','👄'] },
+    { icon: '❤️', label: 'Hearts', emojis: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❤️‍🔥','❤️‍🩹','❣️','💕','💞','💓','💗','💖','💘','💝','💟','♥️','🫀','💋','💌','💐','🌹','🥀','🌷','🌸','🌺','🌻','🌼','💎','✨','🌟','⭐','🔥','💫','⚡','☀️','🌈'] },
+    { icon: '🎉', label: 'Celebrate', emojis: ['🎉','🎊','🎈','🎁','🎀','🎗️','🏆','🏅','🥇','🥈','🥉','⚽','🏀','🏈','⚾','🎾','🏐','🏉','🎱','🏓','🏸','🥊','🎿','🏂','🏋️','🤸','⛹️','🤾','🚴','🏊','🤽','🧗','🏄','🎮','🎯','🎲','🎰','🎵','🎶','🎤','🎸','🎹','🎺','🎻','🥁','📸','🎬','🎨'] },
+    { icon: '🐱', label: 'Animals', emojis: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐻‍❄️','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐤','🦄','🐴','🫏','🐝','🪱','🐛','🦋','🐌','🐞','🐜','🪲','🪳','🐢','🐍','🦎','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊'] },
+    { icon: '🍔', label: 'Food', emojis: ['🍏','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶️','🫑','🌽','🥕','🫒','🧄','🧅','🥔','🍠','🥐','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖','🌭','🍔','🍟','🍕','🌮','🌯','🫔','🥙','🧆','🥗','🍝','🍜','🍲','🍛','🍣','🍱','🥟','🍤','🍙','🍚','🍘','🍥','🥮','🍢','🧁','🎂','🍰','🍩','🍪','🍫','🍬','🍭','🍮','🍯','🍼','🥤','☕','🍵','🧃','🍶','🍺','🍷','🥂','🍹'] },
+    { icon: '🚀', label: 'Travel', emojis: ['🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐','🛻','🚚','🚛','🚜','🏍️','🛵','🚲','🛴','🛹','🛼','🚁','🛸','🚀','✈️','🛩️','🛰️','🚢','⛵','🛥️','🚤','⛴️','🏠','🏡','🏢','🏬','🏭','🏗️','🗼','🗽','⛪','🕌','🕍','⛩️','🕋','⛲','⛺','🌁','🌃','🌆','🌇','🌉','🌌','🎠','🎡','🎢','🏖️','🏝️','🏰','🗻','🌋'] },
+    { icon: '💡', label: 'Objects', emojis: ['💡','🔦','🕯️','📱','💻','⌨️','🖥️','🖨️','🖱️','🖲️','💾','💿','📀','📷','📹','🎥','📞','☎️','📺','📻','🎙️','⏰','⌚','📡','🔋','🪫','🔌','💰','💸','💳','💎','⚖️','🔧','🪛','🔨','⛏️','🪚','🔩','⚙️','🧲','🔬','🔭','📡','💉','💊','🩹','🩺','🚪','🪞','🛏️','🪑','🚽','🧹','🧺','🧼','📦','📮','📬','📨','📩','📝','📁','📂','📅','📆','📎','📌','📍','✂️','🔒','🔓','🗝️','🔑'] },
   ];
-  const EMOJI_LABELS = ['😊', '👍', '🎉', '😈'];
+
+  const STICKER_PACKS = [
+    { name: 'asterism_by_favorite_stickers_bot', label: 'Asterism' },
+    { name: 'in_DFCEDC_by_NaiDrawBot', label: 'DFCEDC' },
+    { name: 'sevendays_holidays_by_favorite_stickers_bot', label: '7 Days' },
+    { name: 'marching_pockets_by_favorite_stickers_bot', label: 'Pockets' },
+    { name: 'triedge_by_favorite_stickers_bot', label: 'Triedge' },
+  ];
+
+  const RECENT_KEY = 'pp_recent_emoji';
+  function getRecentEmojis() {
+    try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch { return []; }
+  }
+  function addRecentEmoji(em) {
+    let recent = getRecentEmojis().filter(e => e !== em);
+    recent.unshift(em);
+    if (recent.length > 24) recent = recent.slice(0, 24);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(recent));
+  }
+
   let emojiPanel = null;
+  let _stickerCache = {};   // packName → stickers[]
+  let _currentTab = 'emoji';
+  let _currentCat = 0;
+  let _currentPack = 0;
+
   emojiBtn.addEventListener('click', () => {
-    if (emojiPanel) { emojiPanel.remove(); emojiPanel = null; return; }
+    if (emojiPanel) { closePanel(); return; }
+    openPanel();
+  });
+
+  function closePanel() {
+    if (!emojiPanel) return;
+    emojiPanel.classList.add('esp-closing');
+    emojiPanel.addEventListener('animationend', () => {
+      emojiPanel?.remove();
+      emojiPanel = null;
+    }, { once: true });
+  }
+
+  function openPanel() {
     emojiPanel = document.createElement('div');
+    emojiPanel.className = 'esp-panel';
     const toolbarRect = toolbar.getBoundingClientRect();
-    emojiPanel.style.cssText = `
-      position:fixed;
-      bottom:${window.innerHeight - toolbarRect.top}px;
-      left:0;right:0;
-      background:var(--surface);
-      border-top:.5px solid var(--border);
-      padding:8px 12px 12px;
-      z-index:200;
-      box-shadow:var(--shadow-lg);
-      max-height:180px;
-      overflow-y:auto;
-    `;
-    const cats = document.createElement('div');
-    cats.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;overflow-x:auto;';
-    const all = ['all', ...EMOJI_LABELS];
-    const rows = [EMOJIS.slice(0,16), EMOJIS.slice(16,32), EMOJIS.slice(32,48), EMOJIS.slice(48)];
-    all.forEach((lbl, i) => {
-      const btn = document.createElement('button');
-      btn.textContent = i === 0 ? '⊞' : lbl;
-      btn.style.cssText = 'background:var(--surface-2);border:none;border-radius:8px;padding:4px 8px;font-size:14px;cursor:pointer;';
-      btn.onclick = () => {
-        grid.innerHTML = '';
-        const subset = i === 0 ? EMOJIS : rows[i - 1];
-        subset.forEach(em => addEmojiBtn(em));
-      };
-      cats.appendChild(btn);
+    emojiPanel.style.bottom = `${window.innerHeight - toolbarRect.top}px`;
+
+    // ── Content area (swapped by tabs) ──
+    const contentWrap = document.createElement('div');
+    contentWrap.style.cssText = 'flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;';
+
+    // ── Bottom tabs ──
+    const tabBar = document.createElement('div');
+    tabBar.className = 'esp-tabs';
+
+    const indicator = document.createElement('div');
+    indicator.className = 'esp-tab-indicator';
+    tabBar.appendChild(indicator);
+
+    const emojiTabBtn = document.createElement('button');
+    emojiTabBtn.className = 'esp-tab active';
+    emojiTabBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>Emoji`;
+
+    const stickerTabBtn = document.createElement('button');
+    stickerTabBtn.className = 'esp-tab';
+    stickerTabBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M21.796 9.982C20.849 5.357 16.729 2 12 2 6.486 2 2 6.486 2 12c0 4.729 3.357 8.849 7.982 9.796a.988.988 0 0 0 .908-.272l10.634-10.634a.988.988 0 0 0 .272-.908zM11 19.929A8.012 8.012 0 0 1 4 12c0-4.411 3.589-8 8-8 3.7 0 6.867 2.543 7.929 6H15c-1.654 0-3 1.346-3 3v4.929z"/></svg>Stickers`;
+
+    tabBar.appendChild(emojiTabBtn);
+    tabBar.appendChild(stickerTabBtn);
+
+    emojiPanel.appendChild(contentWrap);
+    emojiPanel.appendChild(tabBar);
+    document.body.appendChild(emojiPanel);
+
+    // Position indicator
+    requestAnimationFrame(() => {
+      updateIndicator(emojiTabBtn);
     });
-    emojiPanel.appendChild(cats);
-    const grid = document.createElement('div');
-    grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;';
-    function addEmojiBtn(em) {
+
+    function updateIndicator(btn) {
+      const r = btn.getBoundingClientRect();
+      const p = tabBar.getBoundingClientRect();
+      indicator.style.left = (r.left - p.left) + 'px';
+      indicator.style.width = r.width + 'px';
+    }
+
+    // Tab switching
+    emojiTabBtn.onclick = () => {
+      if (_currentTab === 'emoji') return;
+      _currentTab = 'emoji';
+      emojiTabBtn.classList.add('active');
+      stickerTabBtn.classList.remove('active');
+      updateIndicator(emojiTabBtn);
+      renderEmojiContent();
+    };
+    stickerTabBtn.onclick = () => {
+      if (_currentTab === 'sticker') return;
+      _currentTab = 'sticker';
+      stickerTabBtn.classList.add('active');
+      emojiTabBtn.classList.remove('active');
+      updateIndicator(stickerTabBtn);
+      renderStickerContent();
+    };
+
+    // ═══ Emoji Content ═══
+    function renderEmojiContent() {
+      contentWrap.innerHTML = '';
+      // Category bar
+      const catBar = document.createElement('div');
+      catBar.className = 'esp-categories';
+
+      // Clock icon for recent
+      const recentBtn = document.createElement('button');
+      recentBtn.className = `esp-cat-btn${_currentCat === -1 ? ' active' : ''}`;
+      recentBtn.textContent = '🕐';
+      recentBtn.title = 'Recent';
+      recentBtn.onclick = () => {
+        _currentCat = -1;
+        showCategory(-1);
+        catBar.querySelectorAll('.esp-cat-btn').forEach(b => b.classList.remove('active'));
+        recentBtn.classList.add('active');
+      };
+      catBar.appendChild(recentBtn);
+
+      EMOJI_CATEGORIES.forEach((cat, i) => {
+        const btn = document.createElement('button');
+        btn.className = `esp-cat-btn${_currentCat === i ? ' active' : ''}`;
+        btn.textContent = cat.icon;
+        btn.title = cat.label;
+        btn.onclick = () => {
+          _currentCat = i;
+          showCategory(i);
+          catBar.querySelectorAll('.esp-cat-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        };
+        catBar.appendChild(btn);
+      });
+      contentWrap.appendChild(catBar);
+
+      // Grid
+      const grid = document.createElement('div');
+      grid.className = 'esp-grid';
+      contentWrap.appendChild(grid);
+
+      function showCategory(idx) {
+        grid.innerHTML = '';
+        if (idx === -1) {
+          const recent = getRecentEmojis();
+          if (recent.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'esp-recent-label';
+            empty.textContent = 'No recent emojis';
+            empty.style.color = 'var(--text-muted)';
+            empty.style.textAlign = 'center';
+            empty.style.padding = '32px 0';
+            grid.appendChild(empty);
+            return;
+          }
+          const lbl = document.createElement('div');
+          lbl.className = 'esp-recent-label';
+          lbl.textContent = 'RECENTLY USED';
+          grid.appendChild(lbl);
+          recent.forEach(em => addEmojiToGrid(em, grid));
+        } else {
+          EMOJI_CATEGORIES[idx].emojis.forEach(em => addEmojiToGrid(em, grid));
+        }
+      }
+
+      showCategory(_currentCat >= 0 ? _currentCat : -1);
+    }
+
+    function addEmojiToGrid(em, grid) {
       const btn = document.createElement('button');
+      btn.className = 'esp-emoji-btn';
       btn.textContent = em;
-      btn.style.cssText = 'background:none;border:none;font-size:26px;cursor:pointer;padding:4px;border-radius:8px;line-height:1;';
-      btn.onclick = () => { inputEl.value += em; inputEl.dispatchEvent(new Event('input')); emojiPanel.remove(); emojiPanel = null; };
+      btn.onclick = () => {
+        inputEl.value += em;
+        inputEl.dispatchEvent(new Event('input'));
+        addRecentEmoji(em);
+        closePanel();
+      };
       grid.appendChild(btn);
     }
-    EMOJIS.forEach(em => addEmojiBtn(em));
-    emojiPanel.appendChild(grid);
-    document.body.appendChild(emojiPanel);
-  });
+
+    // ═══ Sticker Content ═══
+    function renderStickerContent() {
+      contentWrap.innerHTML = '';
+
+      // Pack tabs bar
+      const packBar = document.createElement('div');
+      packBar.className = 'esp-sticker-packs';
+      contentWrap.appendChild(packBar);
+
+      // Sticker grid
+      const stickerGrid = document.createElement('div');
+      stickerGrid.className = 'esp-sticker-grid';
+      contentWrap.appendChild(stickerGrid);
+
+      STICKER_PACKS.forEach((pack, i) => {
+        const btn = document.createElement('button');
+        btn.className = `esp-pack-btn${_currentPack === i ? ' active' : ''}`;
+        btn.textContent = pack.label;
+        btn.onclick = () => {
+          _currentPack = i;
+          packBar.querySelectorAll('.esp-pack-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          loadStickerPack(pack.name, stickerGrid);
+        };
+        packBar.appendChild(btn);
+      });
+
+      loadStickerPack(STICKER_PACKS[_currentPack].name, stickerGrid);
+    }
+
+    async function loadStickerPack(packName, grid) {
+      grid.innerHTML = '';
+
+      // Check cache
+      if (_stickerCache[packName]) {
+        renderStickers(_stickerCache[packName], grid);
+        return;
+      }
+
+      // Show loading
+      const loading = document.createElement('div');
+      loading.className = 'esp-sticker-status';
+      loading.innerHTML = '<div class="esp-spinner"></div><span>Loading stickers...</span>';
+      grid.appendChild(loading);
+
+      try {
+        const data = await api.stickerSet(packName);
+        _stickerCache[packName] = data.stickers || [];
+        grid.innerHTML = '';
+        renderStickers(_stickerCache[packName], grid);
+      } catch (err) {
+        grid.innerHTML = '';
+        const errEl = document.createElement('div');
+        errEl.className = 'esp-sticker-status';
+        errEl.innerHTML = `<span style="font-size:24px">😢</span><span>${err.message || 'Failed to load stickers'}</span>`;
+        grid.appendChild(errEl);
+      }
+    }
+
+    function renderStickers(stickers, grid) {
+      const staticStickers = stickers.filter(s => !s.is_animated && !s.is_video);
+      if (staticStickers.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'esp-sticker-status';
+        empty.innerHTML = '<span style="font-size:24px">📭</span><span>No static stickers in this pack</span>';
+        grid.appendChild(empty);
+        return;
+      }
+
+      staticStickers.forEach(sticker => {
+        const item = document.createElement('div');
+        item.className = 'esp-sticker-item loading';
+        const img = document.createElement('img');
+        const fileId = sticker.thumb_file_id || sticker.file_id;
+        img.src = api.stickerFileUrl(fileId);
+        img.alt = sticker.emoji || 'sticker';
+        img.loading = 'lazy';
+        img.onload = () => item.classList.remove('loading');
+        img.onerror = () => {
+          item.classList.remove('loading');
+          item.innerHTML = '<span style="font-size:20px;opacity:.4">✕</span>';
+        };
+        item.appendChild(img);
+        item.onclick = () => {
+          // Send sticker as image message with full-res file
+          const fullUrl = api.stickerFileUrl(sticker.file_id);
+          sendMessage(fullUrl, 'sticker', { url: fullUrl });
+          closePanel();
+        };
+        grid.appendChild(item);
+      });
+    }
+
+    // Initial render
+    if (_currentTab === 'emoji') renderEmojiContent();
+    else renderStickerContent();
+  }
 
   // ── Incoming messages ─────────────────────────────────────────
   async function handleIncoming(msg) {
@@ -486,14 +728,14 @@ export async function renderChat(root, chat) {
     if (chat.type === 'group') {
       // Group messages are plain text
       text = msg.ciphertext || '';
-      if (['image', 'voice', 'file'].includes(msg.msg_type)) extra = { url: text };
+      if (['image', 'voice', 'file', 'sticker'].includes(msg.msg_type)) extra = { url: text };
       extra.senderName = msg.from_nickname || '?';
       extra.senderAvatar = msg.from_avatar || null;
     } else if (chat.type === 'private' && msg.header && msg.ciphertext) {
       const plain = await tryDecrypt(msg.ciphertext, msg.header);
       if (plain !== null) {
         text = plain;
-        if (['image', 'voice', 'file'].includes(msg.msg_type)) extra = { url: text };
+        if (['image', 'voice', 'file', 'sticker'].includes(msg.msg_type)) extra = { url: text };
       } else {
         text = t('encryptedMsg');
       }
