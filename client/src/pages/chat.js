@@ -1,7 +1,7 @@
 /**
  * Chat Window — i18n v2 + E2EE v2 (stateless per-message ECDH)
  */
-import { state, avatarEl, goBack, showToast, formatTime } from '../app.js';
+import { state, avatarEl, goBack, showToast, formatTime, openGroupInfo } from '../app.js';
 import { api } from '../api.js';
 import { send, onEvent, offEvent } from '../socket.js';
 import { getKey } from '../crypto/keystore.js';
@@ -26,6 +26,12 @@ export async function renderChat(root, chat) {
     </button>
     <div class="topbar-title" id="chat-title">${esc(chat.name)}</div>
     <div class="topbar-call-btns">
+      ${chat.type === 'group' ? `
+      <button class="topbar-btn" id="group-info-btn" title="${t('groupInfo')}">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+          <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+        </svg>
+      </button>` : ''}
       <button class="topbar-btn" id="voice-call-btn" title="${t('callVoice')}">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
           <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.27-.27.67-.36 1.02-.23 1.12.45 2.34.68 3.58.68.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.3 21 3 13.7 3 4.5c0-.55.45-1 1-1H8c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.1.35.02.74-.22 1.02L6.6 10.8z"/>
@@ -41,6 +47,11 @@ export async function renderChat(root, chat) {
   `;
   root.appendChild(topbar);
   topbar.querySelector('#back-btn').onclick = goBack;
+
+  // Group info button
+  topbar.querySelector('#group-info-btn')?.addEventListener('click', () => {
+    openGroupInfo(chat.id);
+  });
 
   // Call buttons
   topbar.querySelector('#voice-call-btn').onclick = async () => {
@@ -155,22 +166,32 @@ export async function renderChat(root, chat) {
       content = esc(text);
     }
 
-    if (!fromMe) row.appendChild(avatarEl(chat.name, chat.avatar, 'avatar-sm'));
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble';
-    bubble.innerHTML = content;
-
-    if (msgType === 'image') {
-      bubble.querySelector('.bubble-image').addEventListener('click', e => showImageViewer(e.target.src));
+    // For group chat incoming messages: show sender avatar + name
+    if (!fromMe && chat.type === 'group') {
+      const senderAv = avatarEl(extra.senderName || '?', extra.senderAvatar, 'avatar-sm');
+      row.appendChild(senderAv);
+      const wrapper = document.createElement('div');
+      wrapper.className = 'group-bubble-wrap';
+      const senderLabel = document.createElement('div');
+      senderLabel.className = 'group-sender-name';
+      senderLabel.textContent = extra.senderName || '?';
+      wrapper.appendChild(senderLabel);
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.innerHTML = content;
+      wrapper.appendChild(bubble);
+      row.appendChild(wrapper);
+      if (msgType === 'image') bubble.querySelector('.bubble-image')?.addEventListener('click', e => showImageViewer(e.target.src));
+      if (msgType === 'voice') bubble.querySelector('.voice-play-btn')?.addEventListener('click', e => new Audio(e.currentTarget.dataset.src).play());
+    } else {
+      if (!fromMe) row.appendChild(avatarEl(chat.name, chat.avatar, 'avatar-sm'));
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.innerHTML = content;
+      if (msgType === 'image') bubble.querySelector('.bubble-image')?.addEventListener('click', e => showImageViewer(e.target.src));
+      if (msgType === 'voice') bubble.querySelector('.voice-play-btn')?.addEventListener('click', e => new Audio(e.currentTarget.dataset.src).play());
+      row.appendChild(bubble);
     }
-    if (msgType === 'voice') {
-      bubble.querySelector('.voice-play-btn').addEventListener('click', e => {
-        const audio = new Audio(e.currentTarget.dataset.src);
-        audio.play();
-      });
-    }
-
-    row.appendChild(bubble);
 
     const timeEl = document.createElement('div');
     timeEl.className = `bubble-ts${fromMe ? ' bubble-ts-out' : ''}`;
@@ -200,7 +221,13 @@ export async function renderChat(root, chat) {
       let text = t('encryptedMsg');
       let extra = {};
 
-      if (chat.type === 'private' && !fromMe && row.header) {
+      if (chat.type === 'group') {
+        // Group messages are plain text (not encrypted)
+        text = row.ciphertext || '';
+        if (['image', 'voice', 'file'].includes(row.msg_type)) extra = { url: text };
+        extra.senderName = row.from_nickname || '?';
+        extra.senderAvatar = row.from_avatar || null;
+      } else if (chat.type === 'private' && !fromMe && row.header) {
         const plain = await tryDecrypt(row.ciphertext, row.header);
         if (plain !== null) {
           text = plain;
@@ -258,6 +285,7 @@ export async function renderChat(root, chat) {
         return;
       }
     }
+    // Group messages: no encryption, send plain text as ciphertext field
 
     addBubble(text, true, Date.now(), msgType, { msgId, ...extra });
     send({
@@ -423,7 +451,13 @@ export async function renderChat(root, chat) {
     let text = msg.ciphertext; // fallback: show raw for groups
     let extra = {};
 
-    if (chat.type === 'private' && msg.header && msg.ciphertext) {
+    if (chat.type === 'group') {
+      // Group messages are plain text
+      text = msg.ciphertext || '';
+      if (['image', 'voice', 'file'].includes(msg.msg_type)) extra = { url: text };
+      extra.senderName = msg.from_nickname || '?';
+      extra.senderAvatar = msg.from_avatar || null;
+    } else if (chat.type === 'private' && msg.header && msg.ciphertext) {
       const plain = await tryDecrypt(msg.ciphertext, msg.header);
       if (plain !== null) {
         text = plain;

@@ -1472,3 +1472,168 @@ html, body {
   font-size: 14px;
 }
 
+/* ── Modal Overlay ─────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 800;
+  animation: fadeIn .2s ease;
+}
+.modal-card {
+  background: var(--surface-solid);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: modalPop .25s cubic-bezier(.2,1.2,.4,1);
+}
+@keyframes modalPop {
+  from { transform: scale(.9) translateY(20px); opacity: 0; }
+  to   { transform: scale(1) translateY(0); opacity: 1; }
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 0.5px solid var(--divider);
+}
+
+/* ── Group Chat Bubbles ──────────────────────────────────── */
+.group-bubble-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: min(72vw, 340px);
+}
+.group-sender-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--blue);
+  padding-left: 4px;
+  letter-spacing: -0.1px;
+}
+
+/* ── Member Checkbox ─────────────────────────────────────── */
+.member-checkbox {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin-right: 4px;
+}
+
+/* ── Role Badges ──────────────────────────────────────────── */
+.role-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  vertical-align: middle;
+  margin-left: 4px;
+}
+.role-owner {
+  background: rgba(255,149,0,.15);
+  color: var(--orange);
+}
+.role-admin {
+  background: rgba(0,122,255,.12);
+  color: var(--blue);
+}
+
+/* ── Danger Action Rows ───────────────────────────────────── */
+.danger-action {
+  justify-content: center;
+  color: var(--red);
+  cursor: pointer;
+  font-weight: 500;
+  padding: 14px 16px;
+  background: var(--surface);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: var(--radius-sm);
+  margin: 8px 16px;
+  transition: background .15s ease;
+}
+.danger-action:active {
+  background: rgba(255,59,48,.1);
+}
+
+/* ── Page Scroll Container ────────────────────────────────── */
+.page-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--bg);
+}
+.page-scroll::-webkit-scrollbar { display: none; }
+
+/* ── Group Info Header ────────────────────────────────────── */
+.group-info-header {
+  background: var(--surface);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  margin: 12px 16px;
+  border-radius: var(--radius);
+  border: 0.5px solid var(--glass-border);
+  box-shadow: var(--glass-specular), var(--shadow);
+}
+
+/* ── Settings Section ─────────────────────────────────────── */
+.settings-section {
+  margin-bottom: 8px;
+}
+
+/* ── 5-tab badge positioning fix ──────────────────────────── */
+.tab-badge-sm {
+  width: 8px;
+  min-width: 8px;
+  height: 8px;
+  padding: 0;
+  right: calc(50% - 16px);
+  top: 6px;
+}
+
+/* ── Mute Toggle Switch ───────────────────────────────────── */
+.mute-toggle {
+  width: 50px;
+  height: 30px;
+  border-radius: 15px;
+  background: var(--surface-2);
+  border: 0.5px solid var(--glass-border);
+  position: relative;
+  cursor: pointer;
+  transition: background .25s ease, border-color .25s ease;
+  flex-shrink: 0;
+}
+.mute-toggle-on {
+  background: var(--green);
+  border-color: var(--green);
+}
+.mute-toggle-knob {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1);
+}
+.mute-toggle-on .mute-toggle-knob {
+  transform: translateX(20px);
+}
+
+/* ── Mute indicator in chat list ──────────────────────────── */
+.chat-muted-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  margin-left: 4px;
+  opacity: .6;
+}

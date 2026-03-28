@@ -68,11 +68,22 @@ CREATE TABLE IF NOT EXISTS group_members (
   group_id    VARCHAR(36)   NOT NULL,
   user_id     VARCHAR(36)   NOT NULL,
   role        ENUM('owner','admin','member') NOT NULL DEFAULT 'member',
+  muted       TINYINT(1)    NOT NULL DEFAULT 0,
   joined_at   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (group_id, user_id),
   FOREIGN KEY (group_id) REFERENCES `groups`(id) ON DELETE CASCADE,
   FOREIGN KEY (user_id)  REFERENCES users(id)    ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Migration: add muted column to group_members (idempotent)
+SET @gm_muted = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'group_members' AND COLUMN_NAME = 'muted');
+SET @gm_sql = IF(@gm_muted = 0,
+  'ALTER TABLE group_members ADD COLUMN muted TINYINT(1) NOT NULL DEFAULT 0 AFTER role',
+  'SELECT 1');
+PREPARE gm_stmt FROM @gm_sql;
+EXECUTE gm_stmt;
+DEALLOCATE PREPARE gm_stmt;
 
 -- ── Messages ──────────────────────────────────────────────────────────────
 -- Server stores encrypted payloads for offline delivery only.

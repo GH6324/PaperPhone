@@ -1,0 +1,271 @@
+/**
+ * Group Info page — view members, manage group
+ */
+import { state, avatarEl, showToast, goBack, navigateTo } from '../app.js';
+import { api } from '../api.js';
+import { t } from '../i18n.js';
+
+const esc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+export async function renderGroupInfo(root, groupId) {
+  root.innerHTML = '';
+  root.style.cssText = 'display:flex;flex-direction:column;height:100dvh;';
+
+  // Top bar
+  const topbar = document.createElement('div');
+  topbar.className = 'topbar';
+  topbar.innerHTML = `
+    <button class="topbar-btn topbar-back" id="gi-back">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+      </svg>
+    </button>
+    <div class="topbar-title">${t('groupInfo')}</div>
+    <div style="min-width:44px"></div>
+  `;
+  root.appendChild(topbar);
+  topbar.querySelector('#gi-back').onclick = goBack;
+
+  const content = document.createElement('div');
+  content.className = 'page-scroll';
+  content.style.cssText = 'flex:1;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom, 16px);';
+  content.innerHTML = `<div style="padding:40px 0;text-align:center;" class="text-muted">...</div>`;
+  root.appendChild(content);
+
+  // Load group info
+  let info;
+  try {
+    info = await api.groupInfo(groupId);
+  } catch (err) {
+    content.innerHTML = `<div style="padding:40px 0;text-align:center;" class="text-muted">${esc(err.message)}</div>`;
+    return;
+  }
+
+  const isOwner = info.owner_id === state.user.id;
+  const myRole = info.members.find(m => m.id === state.user.id)?.role || 'member';
+  const isAdmin = myRole === 'owner' || myRole === 'admin';
+
+  content.innerHTML = '';
+
+  // ── Group header card ──
+  const header = document.createElement('div');
+  header.className = 'group-info-header';
+  header.style.cssText = 'display:flex;flex-direction:column;align-items:center;padding:24px 16px 16px;';
+  const av = avatarEl(info.name, info.avatar, 'avatar-lg');
+  av.style.cssText = 'width:72px;height:72px;font-size:28px;border-radius:20px;margin-bottom:12px;';
+  header.appendChild(av);
+  const nameEl = document.createElement('div');
+  nameEl.style.cssText = 'font-size:20px;font-weight:600;margin-bottom:4px;';
+  nameEl.textContent = info.name;
+  header.appendChild(nameEl);
+  const countEl = document.createElement('div');
+  countEl.className = 'text-muted';
+  countEl.style.fontSize = '14px';
+  countEl.textContent = `${info.member_count} ${t('nMembers')}`;
+  header.appendChild(countEl);
+  content.appendChild(header);
+
+  // ── Notice ──
+  const noticeSection = document.createElement('div');
+  noticeSection.className = 'settings-section';
+  noticeSection.innerHTML = `
+    <div class="section-header">${t('groupNotice')}</div>
+    <div class="list-item" style="padding:12px 16px;">
+      <span class="text-muted" style="font-size:14px;white-space:pre-wrap;">${esc(info.notice || t('groupNoNotice'))}</span>
+    </div>
+  `;
+  content.appendChild(noticeSection);
+
+  // ── Mute (Do Not Disturb) Toggle ──
+  const myGroupEntry = (state.groupsList || []).find(g => g.id === groupId);
+  let isMuted = !!myGroupEntry?.muted;
+
+  const muteSection = document.createElement('div');
+  muteSection.className = 'settings-section';
+  const muteRow = document.createElement('div');
+  muteRow.className = 'list-item';
+  muteRow.style.cssText = 'cursor:pointer;';
+  muteRow.innerHTML = `
+    <div style="flex:1;display:flex;align-items:center;gap:10px;">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="var(--text-muted)">
+        <path d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 0 0 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+      </svg>
+      <span style="font-size:15px;font-weight:500;">${t('muteGroup')}</span>
+    </div>
+    <div class="mute-toggle ${isMuted ? 'mute-toggle-on' : ''}" id="mute-toggle">
+      <div class="mute-toggle-knob"></div>
+    </div>
+  `;
+  muteRow.onclick = async () => {
+    const newVal = !isMuted;
+    const toggle = muteRow.querySelector('#mute-toggle');
+    toggle.classList.toggle('mute-toggle-on', newVal);
+    try {
+      await api.muteGroup(groupId, newVal);
+      isMuted = newVal;
+      // Update local state
+      if (myGroupEntry) myGroupEntry.muted = newVal ? 1 : 0;
+      const chatEntry = state.chats.find(c => c.id === groupId);
+      if (chatEntry) chatEntry.muted = newVal;
+      showToast(newVal ? t('muteEnabled') : t('muteDisabled'));
+    } catch (err) {
+      toggle.classList.toggle('mute-toggle-on', !newVal);
+      showToast(err.message);
+    }
+  };
+  muteSection.appendChild(muteRow);
+  content.appendChild(muteSection);
+
+  // ── Members ──
+  const membersSection = document.createElement('div');
+  membersSection.className = 'settings-section';
+  membersSection.innerHTML = `<div class="section-header">${t('groupMembers')} (${info.members.length})</div>`;
+
+  // Add member button (if admin/owner)
+  if (isAdmin) {
+    const addRow = document.createElement('div');
+    addRow.className = 'list-item';
+    addRow.style.cursor = 'pointer';
+    addRow.innerHTML = `
+      <div class="avatar avatar-sm" style="background:var(--green);display:flex;align-items:center;justify-content:center;">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="#fff"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      </div>
+      <span style="margin-left:12px;font-size:15px;font-weight:500;">${t('addMembers')}</span>
+    `;
+    addRow.onclick = () => showAddMemberModal(groupId, info.members.map(m => m.id), content, membersSection);
+    membersSection.appendChild(addRow);
+  }
+
+  info.members.forEach(m => {
+    const item = document.createElement('div');
+    item.className = 'list-item';
+    item.appendChild(avatarEl(m.nickname || m.username, m.avatar, 'avatar-sm'));
+    const info2 = document.createElement('div');
+    info2.className = 'flex-1';
+    info2.style.marginLeft = '12px';
+    let roleTag = '';
+    if (m.role === 'owner') roleTag = `<span class="role-badge role-owner">${t('groupOwner')}</span>`;
+    else if (m.role === 'admin') roleTag = `<span class="role-badge role-admin">${t('groupAdmin')}</span>`;
+    info2.innerHTML = `
+      <div style="font-size:15px;font-weight:500;">${esc(m.nickname || m.username)} ${roleTag}</div>
+      <div class="text-muted" style="font-size:13px;">@${esc(m.username)}</div>
+    `;
+    item.appendChild(info2);
+
+    // Remove button for admins (can't remove owner)
+    if (isAdmin && m.role !== 'owner' && m.id !== state.user.id) {
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'btn-pill btn-outline';
+      removeBtn.style.cssText = 'color:var(--red);border-color:var(--red);font-size:12px;padding:4px 10px;';
+      removeBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M19 13H5v-2h14v2z"/></svg>`;
+      removeBtn.onclick = async (e) => {
+        e.stopPropagation();
+        if (!confirm(t('removeMemberConfirm'))) return;
+        try {
+          await api.removeMember(groupId, m.id);
+          item.remove();
+          showToast('✓');
+        } catch (err) { showToast(err.message); }
+      };
+      item.appendChild(removeBtn);
+    }
+    membersSection.appendChild(item);
+  });
+  content.appendChild(membersSection);
+
+  // ── Actions ──
+  const actionsSection = document.createElement('div');
+  actionsSection.className = 'settings-section';
+  actionsSection.style.paddingBottom = '32px';
+
+  if (!isOwner) {
+    const leaveBtn = document.createElement('div');
+    leaveBtn.className = 'list-item danger-action';
+    leaveBtn.style.cssText = 'justify-content:center;color:var(--red);cursor:pointer;font-weight:500;';
+    leaveBtn.textContent = t('leaveGroup');
+    leaveBtn.onclick = async () => {
+      if (!confirm(t('leaveGroupConfirm'))) return;
+      try {
+        await api.leaveGroup(groupId);
+        // Remove from local state
+        state.groupsList = (state.groupsList || []).filter(g => g.id !== groupId);
+        state.chats = state.chats.filter(c => c.id !== groupId);
+        showToast('✓');
+        navigateTo('groups');
+      } catch (err) { showToast(err.message); }
+    };
+    actionsSection.appendChild(leaveBtn);
+  }
+
+  if (isOwner) {
+    const disbandBtn = document.createElement('div');
+    disbandBtn.className = 'list-item danger-action';
+    disbandBtn.style.cssText = 'justify-content:center;color:var(--red);cursor:pointer;font-weight:600;';
+    disbandBtn.textContent = t('disbandGroup');
+    disbandBtn.onclick = async () => {
+      if (!confirm(t('disbandGroupConfirm'))) return;
+      try {
+        await api.disbandGroup(groupId);
+        state.groupsList = (state.groupsList || []).filter(g => g.id !== groupId);
+        state.chats = state.chats.filter(c => c.id !== groupId);
+        showToast('✓');
+        navigateTo('groups');
+      } catch (err) { showToast(err.message); }
+    };
+    actionsSection.appendChild(disbandBtn);
+  }
+
+  content.appendChild(actionsSection);
+}
+
+function showAddMemberModal(groupId, existingIds, contentEl, membersSection) {
+  const friends = (state.contacts || []).filter(f => !existingIds.includes(f.id));
+  if (!friends.length) { showToast(t('noContacts')); return; }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-card" style="width:90%;max-width:420px;max-height:70vh;display:flex;flex-direction:column;">
+      <div class="modal-header">
+        <button class="topbar-btn" id="add-cancel">${t('cancel')}</button>
+        <div class="topbar-title" style="font-size:16px">${t('addMembers')}</div>
+        <div style="min-width:44px"></div>
+      </div>
+      <div id="add-picker" style="padding:8px 0;flex:1;overflow-y:auto;"></div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const pickerEl = overlay.querySelector('#add-picker');
+  overlay.querySelector('#add-cancel').onclick = () => overlay.remove();
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+
+  friends.forEach(f => {
+    const item = document.createElement('div');
+    item.className = 'list-item';
+    item.style.cursor = 'pointer';
+    item.appendChild(avatarEl(f.nickname || f.username, f.avatar, 'avatar-sm'));
+    const info = document.createElement('span');
+    info.style.cssText = 'font-size:15px;font-weight:500;margin-left:12px;flex:1;';
+    info.textContent = f.nickname || f.username;
+    item.appendChild(info);
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn-pill btn-green';
+    addBtn.textContent = t('add');
+    addBtn.onclick = async (e) => {
+      e.stopPropagation();
+      addBtn.disabled = true;
+      try {
+        await api.addMember(groupId, f.id);
+        addBtn.textContent = '✓';
+        addBtn.className = 'btn-pill btn-outline';
+        existingIds.push(f.id);
+      } catch (err) {
+        showToast(err.message);
+        addBtn.disabled = false;
+      }
+    };
+    item.appendChild(addBtn);
+    pickerEl.appendChild(item);
+  });
+}

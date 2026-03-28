@@ -13,8 +13,9 @@ A WeChat-style end-to-end encrypted instant messaging app with stateless ECDH + 
 | Feature | Description |
 |---------|-------------|
 | 🔐 End-to-End Encryption | Stateless ECDH + XSalsa20-Poly1305 — ephemeral keys per message, forward secrecy |
-| 🗝️ Zero-Knowledge Server | Server stores only ciphertext; private keys never leave the device |
+| 🗑️ Zero-Knowledge Server | Server stores only ciphertext; private keys never leave the device |
 | 📹 Video & Voice Calls | WebRTC P2P (1:1) + Mesh (group), Cloudflare TURN for NAT traversal |
+| 👥 Group Chat | Up to 2000 members, plain-text messages (no encryption), Do Not Disturb mode, member management |
 | 🔔 Push Notifications | Web Push (VAPID) + OneSignal dual-channel  — reach users even when offline |
 | 🌐 Multi-Language | Chinese, English, Japanese, Korean, French — auto-detect + manual switch |
 | 📱 iOS — No Enterprise Cert | PWA via Safari "Add to Home Screen", works permanently without Apple signing |
@@ -289,14 +290,16 @@ paperphone/
         ├── crypto/
         │   ├── ratchet.js      # X3DH + Double Ratchet + ML-KEM-768
         │   └── keystore.js     # IndexedDB private key store
-        └── pages/
-            ├── login.js        # Login / Register (key generation, language picker)
-            ├── chats.js        # Chat list
-            ├── chat.js         # Chat window (E2E encryption, call buttons)
-            ├── contacts.js     # Contacts (friend requests, online status)
-            ├── discover.js     # Discover page
-            ├── profile.js      # Me / Settings (language, fingerprint, notifications, PWA)
-            └── call.js         # Call UI (incoming / active / multi-party video)
+        ├── pages/
+        │   ├── login.js        # Login / Register (key generation, language picker)
+        │   ├── chats.js        # Chat list
+        │   ├── chat.js         # Chat window (E2E encryption, call buttons)
+        │   ├── groups.js       # Group list (create group, search)
+        │   ├── groupInfo.js    # Group info (member management, DND, leave/disband)
+        │   ├── contacts.js     # Contacts (friend requests, online status)
+        │   ├── discover.js     # Discover page
+        │   ├── profile.js      # Me / Settings (language, fingerprint, notifications, PWA)
+        │   └── call.js         # Call UI (incoming / active / multi-party video)
 ```
 
 ---
@@ -310,7 +313,7 @@ paperphone/
 | `users` | User profiles + ECDH/OPK public keys |
 | `prekeys` | X3DH one-time prekey pool |
 | `friends` | Friendship relationships (pending / accepted / blocked) |
-| `groups` / `group_members` | Group chats + membership |
+| `groups` / `group_members` | Group chats + membership (incl. mute/DND status) |
 | `messages` | Encrypted payloads (offline buffer, deletable after delivery) |
 | `moments` | Social posts (text ≤ 1024 chars) |
 | `moment_images` | Post images (up to 9 per post) |

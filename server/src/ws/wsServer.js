@@ -167,10 +167,17 @@ function initWsServer(httpServer) {
       // ── GROUP MESSAGE ─────────────────────────────────────────────────
       if (msg.type === 'message' && msg.group_id) {
         const msgId = uuidv4();
+        const db = getDb();
+        // Lookup sender nickname for display
+        const [senderRows] = await db.query('SELECT nickname, avatar FROM users WHERE id = ?', [ws.userId]);
+        const fromNick = senderRows[0]?.nickname || '';
+        const fromAvatar = senderRows[0]?.avatar || null;
         const envelope = {
           type: 'message',
           id: msgId,
           from: ws.userId,
+          from_nickname: fromNick,
+          from_avatar: fromAvatar,
           group_id: msg.group_id,
           msg_type: msg.msg_type || 'text',
           ciphertext: msg.ciphertext,
@@ -178,7 +185,6 @@ function initWsServer(httpServer) {
           ts: Date.now(),
         };
         // Store in DB for offline group members
-        const db = getDb();
         await db.query(
           `INSERT INTO messages (id, type, from_id, to_id, ciphertext, header, msg_type)
            VALUES (?, 'group', ?, ?, ?, ?, ?)`,
@@ -274,6 +280,7 @@ function initWsServer(httpServer) {
 }
 
 async function flushOfflineMessages(userId, ws, db) {
+  // Private messages
   const [rows] = await db.query(
     `SELECT id, from_id, to_id, ciphertext, header, self_ciphertext, self_header, msg_type, created_at, read_at, type
      FROM messages
@@ -296,6 +303,39 @@ async function flushOfflineMessages(userId, ws, db) {
     };
     ws.send(JSON.stringify(envelope));
     await db.query('UPDATE messages SET delivered = 1 WHERE id = ?', [row.id]);
+  }
+
+  // Group messages — flush unread group messages user missed
+  const [groupRows] = await db.query(
+    `SELECT m.id, m.from_id, m.to_id AS group_id, m.ciphertext, m.header, m.msg_type, m.created_at,
+            u.nickname AS from_nickname, u.avatar AS from_avatar
+     FROM messages m
+     LEFT JOIN users u ON u.id = m.from_id
+     WHERE m.type = 'group'
+       AND m.to_id IN (SELECT group_id FROM group_members WHERE user_id = ?)
+       AND m.from_id != ?
+       AND m.created_at > COALESCE(
+         (SELECT last_active FROM sessions WHERE user_id = ? AND revoked = 0 ORDER BY last_active DESC LIMIT 1),
+         DATE_SUB(NOW(), INTERVAL 7 DAY)
+       )
+     ORDER BY m.created_at ASC
+     LIMIT 200`,
+    [userId, userId, userId]
+  );
+  for (const row of groupRows) {
+    const envelope = {
+      type: 'message',
+      id: row.id,
+      from: row.from_id,
+      from_nickname: row.from_nickname || '',
+      from_avatar: row.from_avatar || null,
+      group_id: row.group_id,
+      msg_type: row.msg_type,
+      ciphertext: row.ciphertext,
+      ts: new Date(row.created_at).getTime(),
+      offline: true,
+    };
+    ws.send(JSON.stringify(envelope));
   }
 }
 

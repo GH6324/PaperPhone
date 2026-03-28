@@ -56,10 +56,15 @@ export const api = {
   removeFriend:   id  => req('DELETE', `/api/friends/${id}`),
 
   // Groups
-  groups:     ()  => req('GET',  '/api/groups'),
-  groupInfo:  id  => req('GET',  `/api/groups/${id}`),
-  createGroup: d  => req('POST', '/api/groups', d),
-  addMember:  (gid, uid) => req('POST', `/api/groups/${gid}/members`, { user_id: uid }),
+  groups:       ()  => req('GET',  '/api/groups'),
+  groupInfo:    id  => req('GET',  `/api/groups/${id}`),
+  createGroup:  d   => req('POST', '/api/groups', d),
+  updateGroup:  (id, d) => req('PATCH', `/api/groups/${id}`, d),
+  addMember:    (gid, uid) => req('POST', `/api/groups/${gid}/members`, { user_id: uid }),
+  removeMember: (gid, uid) => req('DELETE', `/api/groups/${gid}/members/${uid}`),
+  leaveGroup:   id  => req('DELETE', `/api/groups/${id}/members/me`),
+  disbandGroup: id  => req('DELETE', `/api/groups/${id}`),
+  muteGroup:    (id, muted) => req('PATCH', `/api/groups/${id}/mute`, { muted }),
 
   // Messages
   privateHistory: pid => req('GET', `/api/messages/private/${pid}`),

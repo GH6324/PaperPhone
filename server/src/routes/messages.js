@@ -37,11 +37,13 @@ router.get('/group/:groupId', async (req, res, next) => {
     const before = req.query.before ? new Date(parseInt(req.query.before)) : null;
 
     const [rows] = await db.query(
-      `SELECT id, from_id, ciphertext, header, msg_type, created_at, read_at
-       FROM messages
-       WHERE type = 'group' AND to_id = ?
-         ${before ? 'AND created_at < ?' : ''}
-       ORDER BY created_at ASC
+      `SELECT m.id, m.from_id, m.ciphertext, m.header, m.msg_type, m.created_at, m.read_at,
+              u.nickname AS from_nickname, u.avatar AS from_avatar
+       FROM messages m
+       LEFT JOIN users u ON u.id = m.from_id
+       WHERE m.type = 'group' AND m.to_id = ?
+         ${before ? 'AND m.created_at < ?' : ''}
+       ORDER BY m.created_at ASC
        LIMIT ?`,
       before
         ? [req.params.groupId, before, limit]

@@ -1,11 +1,12 @@
 /**
  * Main App Router — PaperPhone
- * Single-page app with 4-tab navigation
+ * Single-page app with 5-tab navigation
  */
 import { getToken, clearToken, api } from './api.js';
 import { connect, disconnect, onEvent } from './socket.js';
 import { renderLogin } from './pages/login.js';
 import { renderChats, refreshChatList } from './pages/chats.js';
+import { renderGroups, refreshGroupList } from './pages/groups.js';
 import { renderContacts } from './pages/contacts.js';
 import { renderDiscover } from './pages/discover.js';
 import { renderProfile } from './pages/profile.js';
@@ -20,8 +21,10 @@ export const state = {
   chats: [],          // [{ id, type, name, avatar, lastMsg, lastTs, unread }]
   sessions: {},       // userId/groupId -> ratchet state
   contacts: [],
+  groupsList: [],     // [{ id, name, avatar, notice, owner_id, role, member_count }]
   activeTab: 'chats',
   chatView: null,     // { id, type } or null
+  groupInfoView: null, // groupId or null
   contactBadge: 0,    // pending friend requests count
   call: null,         // active call info or null
 };
@@ -69,6 +72,7 @@ export function formatTime(ts) {
 function buildTabBar(active) {
   const tabs = [
     { id: 'chats',    label: t('tabChats'),    icon: chatIcon() },
+    { id: 'groups',   label: t('tabGroups'),   icon: groupIcon() },
     { id: 'contacts', label: t('tabContacts'), icon: contactIcon() },
     { id: 'discover', label: t('tabDiscover'), icon: discoverIcon() },
     { id: 'me',       label: t('tabMe'),       icon: meIcon() },
@@ -105,12 +109,20 @@ export function navigateTo(tab, data) {
   if (appEl?._cleanup) { appEl._cleanup(); appEl._cleanup = null; }
   state.activeTab = tab;
   state.chatView = null;
+  state.groupInfoView = null;
   render();
   if (data) window._navData = data;
 }
 
 export function openChat(chat) {
   state.chatView = chat;
+  state.groupInfoView = null;
+  render();
+}
+
+export function openGroupInfo(groupId) {
+  state.groupInfoView = groupId;
+  state.chatView = null;
   render();
 }
 
@@ -118,6 +130,11 @@ export function goBack() {
   // Cleanup chat listeners before going back
   const appEl = document.getElementById('app');
   if (appEl?._cleanup) { appEl._cleanup(); appEl._cleanup = null; }
+  if (state.groupInfoView) {
+    state.groupInfoView = null;
+    render();
+    return;
+  }
   state.chatView = null;
   render();
 }
@@ -134,6 +151,7 @@ export async function navigateAfterLogin(userData) {
   try {
     const [friends, groups] = await Promise.all([api.friends(), api.groups()]);
     state.contacts = friends;
+    state.groupsList = groups;
     state.chats = [
       ...friends.map(f => ({
         id: f.id, type: 'private', name: f.nickname || f.username, avatar: f.avatar,
@@ -141,7 +159,7 @@ export async function navigateAfterLogin(userData) {
       })),
       ...groups.map(g => ({
         id: g.id, type: 'group', name: g.name, avatar: g.avatar,
-        lastMsg: '', lastTs: 0, unread: 0,
+        lastMsg: '', lastTs: 0, unread: 0, muted: !!g.muted,
       })),
     ];
   } catch { /* continue with empty lists */ }
@@ -157,6 +175,11 @@ function render() {
     return;
   }
 
+  if (state.groupInfoView) {
+    import('./pages/groupInfo.js').then(m => m.renderGroupInfo(root, state.groupInfoView));
+    return;
+  }
+
   if (state.chatView) {
     // Full-screen chat; tabs hidden
     import('./pages/chat.js').then(m => m.renderChat(root, state.chatView));
@@ -169,6 +192,7 @@ function render() {
 
   switch (state.activeTab) {
     case 'chats':    renderChats(page); break;
+    case 'groups':   renderGroups(page); break;
     case 'contacts': renderContacts(page); break;
     case 'discover': renderDiscover(page); break;
     case 'me':       renderProfile(page); break;
@@ -185,8 +209,11 @@ function setupGlobalSocketHandlers() {
     const key = msg.group_id || msg.from;
     const chat = state.chats.find(c => c.id === key);
     if (chat && state.chatView?.id !== key) {
-      chat.unread = (chat.unread || 0) + 1;
-      chat.lastMsg = t('encryptedMsg');
+      // Skip unread increment for muted groups
+      if (!chat.muted) {
+        chat.unread = (chat.unread || 0) + 1;
+      }
+      chat.lastMsg = msg.group_id ? (msg.ciphertext || '').slice(0, 30) : t('encryptedMsg');
       chat.lastTs = msg.ts;
       // re-render tab bar badge + chat list
       const tabBar = root.querySelector('.tabbar');
@@ -198,9 +225,9 @@ function setupGlobalSocketHandlers() {
       state.chats.unshift({
         id: key,
         type: msg.group_id ? 'group' : 'private',
-        name: contact ? (contact.nickname || contact.username) : t('newMessage'),
+        name: contact ? (contact.nickname || contact.username) : (msg.from_nickname || t('newMessage')),
         avatar: contact?.avatar || null,
-        lastMsg: t('encryptedMsg'),
+        lastMsg: msg.group_id ? (msg.ciphertext || '').slice(0, 30) : t('encryptedMsg'),
         lastTs: msg.ts,
         unread: 1,
       });
@@ -219,6 +246,42 @@ function setupGlobalSocketHandlers() {
   });
   onEvent('friend_accepted', () => showToast(t('friendAccepted')));
 
+  // ── Group events ────────────────────────────────────────────────────
+  onEvent('group_created', ({ group }) => {
+    if (!state.groupsList) state.groupsList = [];
+    if (!state.groupsList.find(g => g.id === group.id)) {
+      state.groupsList.push(group);
+    }
+    if (!state.chats.find(c => c.id === group.id)) {
+      state.chats.push({
+        id: group.id, type: 'group', name: group.name, avatar: group.avatar || null,
+        lastMsg: '', lastTs: Date.now(), unread: 0,
+      });
+    }
+    refreshGroupList();
+    refreshChatList();
+  });
+  onEvent('group_disbanded', ({ group_id }) => {
+    state.groupsList = (state.groupsList || []).filter(g => g.id !== group_id);
+    state.chats = state.chats.filter(c => c.id !== group_id);
+    refreshGroupList();
+    refreshChatList();
+    if (state.chatView?.id === group_id || state.groupInfoView === group_id) {
+      navigateTo('groups');
+    }
+  });
+  onEvent('group_member_removed', ({ group_id, user_id }) => {
+    if (user_id === state.user.id) {
+      state.groupsList = (state.groupsList || []).filter(g => g.id !== group_id);
+      state.chats = state.chats.filter(c => c.id !== group_id);
+      refreshGroupList();
+      refreshChatList();
+      if (state.chatView?.id === group_id || state.groupInfoView === group_id) {
+        navigateTo('groups');
+      }
+    }
+  });
+
   // ── Session Revoked (device kicked by another session) ───────────────
   onEvent('session_revoked', () => {
     clearToken();
@@ -231,6 +294,7 @@ function setupGlobalSocketHandlers() {
     state.user = null;
     state.chats = [];
     state.contacts = [];
+    state.groupsList = [];
     alert(t('sessionRevoked'));
     window.location.reload();
   });
@@ -280,6 +344,7 @@ async function init() {
 
     const [friends, groups] = await Promise.all([api.friends(), api.groups()]);
     state.contacts = friends;
+    state.groupsList = groups;
     state.chats = [
       ...friends.map(f => ({
         id: f.id, type: 'private', name: f.nickname || f.username, avatar: f.avatar,
@@ -287,7 +352,7 @@ async function init() {
       })),
       ...groups.map(g => ({
         id: g.id, type: 'group', name: g.name, avatar: g.avatar,
-        lastMsg: '', lastTs: 0, unread: 0,
+        lastMsg: '', lastTs: 0, unread: 0, muted: !!g.muted,
       })),
     ];
   } catch {
@@ -370,6 +435,9 @@ onLangChange(() => {
 // ── SVG Icons ─────────────────────────────────────────────────────────────
 function chatIcon() {
   return `<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>`;
+}
+function groupIcon() {
+  return `<svg viewBox="0 0 24 24"><path d="M12 12.75c1.63 0 3.07.39 4.24.9 1.08.48 1.76 1.56 1.76 2.73V18H6v-1.61c0-1.18.68-2.26 1.76-2.73 1.17-.52 2.61-.91 4.24-.91zM4 13c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm1.13 1.1c-.37-.06-.74-.1-1.13-.1-.99 0-1.93.21-2.78.58C.48 14.9 0 15.62 0 16.43V18h4.5v-1.61c0-.83.23-1.61.63-2.29zM20 13c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm3.78 1.58c-.85-.37-1.79-.58-2.78-.58-.39 0-.76.04-1.13.1.4.68.63 1.46.63 2.29V18H24v-1.57c0-.81-.48-1.53-1.22-1.85zM12 12c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3z"/></svg>`;
 }
 function contactIcon() {
   return `<svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>`;

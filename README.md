@@ -16,6 +16,7 @@
 | 🔐 端对端加密 | 无状态 ECDH + XSalsa20-Poly1305，逐消息临时密钥，前向保密 |
 | 🗝️ 零知识服务器 | 服务器只存储密文，私钥仅在设备本地（四层持久化） |
 | 📹 视频/语音通话 | WebRTC P2P（1:1）+ Mesh（多人），Cloudflare TURN 穿透 |
+| 👥 群聊 | 最多 2000 人群组，纯文本消息（无加密），免打扰模式，成员管理 |
 | 🔔 消息推送 | Web Push (VAPID) + OneSignal 双通道，离线也能收到通知 |
 | 🌐 多语言 | 中文、英文、日语、韩语、法语（自动检测 + 手动切换） |
 | 📱 iOS 永久免签 | PWA H5 → Safari「添加到主屏幕」，无需企业证书 |
@@ -290,14 +291,16 @@ paperphone/
         ├── crypto/
         │   ├── ratchet.js      # X3DH + Double Ratchet + ML-KEM-768
         │   └── keystore.js     # 四层私钥持久化（内存/localStorage/sessionStorage/IndexedDB）
-        └── pages/
-            ├── login.js        # 登录/注册（含密钥生成、语言切换）
-            ├── chats.js        # 会话列表
-            ├── chat.js         # 聊天窗口（E2E 加密、通话按钮）
-            ├── contacts.js     # 通讯录（好友申请/在线状态）
-            ├── discover.js     # 发现页
-            ├── profile.js      # 我的/设置（语言、指纹、通知、PWA）
-            └── call.js         # 通话 UI（来电/通话中/多人视频）
+        ├── pages/
+        │   ├── login.js        # 登录/注册（含密钥生成、语言切换）
+        │   ├── chats.js        # 会话列表
+        │   ├── chat.js         # 聊天窗口（E2E 加密、通话按钮）
+        │   ├── groups.js       # 群聊列表（创建群、搜索群）
+        │   ├── groupInfo.js    # 群信息（成员管理、免打扰、退出/解散）
+        │   ├── contacts.js     # 通讯录（好友申请/在线状态）
+        │   ├── discover.js     # 发现页
+        │   ├── profile.js      # 我的/设置（语言、指纹、通知、PWA）
+        │   └── call.js         # 通话 UI（来电/通话中/多人视频）
 ```
 
 ---
@@ -311,7 +314,7 @@ paperphone/
 | `users` | 用户信息 + ECDH/OPK 公钥 |
 | `prekeys` | X3DH 一次性预密钥池 |
 | `friends` | 好友关系（pending/accepted/blocked） |
-| `groups` / `group_members` | 群组 + 成员 |
+| `groups` / `group_members` | 群组 + 成员（含免打扰状态） |
 | `messages` | 加密消息（离线缓冲，送达后可删） |
 | `moments` | 朋友圈动态（文字 ≤1024 字） |
 | `moment_images` | 动态图片（每条最多 9 张） |

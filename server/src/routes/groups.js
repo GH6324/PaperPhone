@@ -7,12 +7,15 @@ const { sendToUser, sendToGroup } = require('../ws/wsServer');
 const router = express.Router();
 router.use(authMiddleware);
 
+const MAX_GROUP_MEMBERS = 2000;
+
 // GET /api/groups — list my groups
 router.get('/', async (req, res, next) => {
   try {
     const db = getDb();
     const [rows] = await db.query(
-      `SELECT g.id, g.name, g.avatar, g.notice, g.owner_id, gm.role
+      `SELECT g.id, g.name, g.avatar, g.notice, g.owner_id, gm.role, gm.muted,
+              (SELECT COUNT(*) FROM group_members WHERE group_id = g.id) AS member_count
        FROM group_members gm
        JOIN \`groups\` g ON g.id = gm.group_id
        WHERE gm.user_id = ?`,
@@ -27,17 +30,29 @@ router.post('/', async (req, res, next) => {
   try {
     const { name, member_ids } = req.body;
     if (!name) return res.status(400).json({ error: 'Group name required' });
+    const members = [...new Set([req.user.id, ...(member_ids || [])])];
+    if (members.length > MAX_GROUP_MEMBERS) {
+      return res.status(400).json({ error: `Group cannot exceed ${MAX_GROUP_MEMBERS} members` });
+    }
     const db = getDb();
     const id = uuidv4();
     await db.query(
       `INSERT INTO \`groups\` (id, name, owner_id) VALUES (?, ?, ?)`,
       [id, name, req.user.id]
     );
-    // Add owner + initial members
-    const members = [...new Set([req.user.id, ...(member_ids || [])])];
     const rows = members.map(uid => [id, uid, uid === req.user.id ? 'owner' : 'member']);
     await db.query('INSERT INTO group_members (group_id, user_id, role) VALUES ?', [rows]);
-    res.status(201).json({ id, name, owner_id: req.user.id });
+
+    const group = { id, name, owner_id: req.user.id, member_count: members.length };
+
+    // Notify added members via WS
+    for (const uid of members) {
+      if (uid !== req.user.id) {
+        sendToUser(uid, { type: 'group_created', group });
+      }
+    }
+
+    res.status(201).json(group);
   } catch (err) { next(err); }
 });
 
@@ -49,10 +64,39 @@ router.get('/:id', async (req, res, next) => {
     if (!groups.length) return res.status(404).json({ error: 'Group not found' });
     const [members] = await db.query(
       `SELECT u.id, u.username, u.nickname, u.avatar, gm.role FROM group_members gm
-       JOIN users u ON u.id = gm.user_id WHERE gm.group_id = ?`,
+       JOIN users u ON u.id = gm.user_id WHERE gm.group_id = ?
+       ORDER BY FIELD(gm.role, 'owner', 'admin', 'member'), gm.joined_at ASC`,
       [req.params.id]
     );
-    res.json({ ...groups[0], members });
+    res.json({ ...groups[0], members, member_count: members.length });
+  } catch (err) { next(err); }
+});
+
+// PATCH /api/groups/:id — update group name / avatar / notice
+router.patch('/:id', async (req, res, next) => {
+  try {
+    const db = getDb();
+    // Check caller is owner or admin
+    const [roleRows] = await db.query(
+      'SELECT role FROM group_members WHERE group_id = ? AND user_id = ?',
+      [req.params.id, req.user.id]
+    );
+    if (!roleRows.length || !['owner', 'admin'].includes(roleRows[0].role)) {
+      return res.status(403).json({ error: 'Only owner or admin can update group' });
+    }
+    const updates = [];
+    const vals = [];
+    if (req.body.name) { updates.push('name = ?'); vals.push(req.body.name); }
+    if (req.body.avatar !== undefined) { updates.push('avatar = ?'); vals.push(req.body.avatar); }
+    if (req.body.notice !== undefined) { updates.push('notice = ?'); vals.push(req.body.notice); }
+    if (!updates.length) return res.status(400).json({ error: 'Nothing to update' });
+    vals.push(req.params.id);
+    await db.query(`UPDATE \`groups\` SET ${updates.join(', ')} WHERE id = ?`, vals);
+    await sendToGroup(req.params.id, {
+      type: 'group_updated', group_id: req.params.id,
+      name: req.body.name, avatar: req.body.avatar, notice: req.body.notice,
+    });
+    res.json({ ok: true });
   } catch (err) { next(err); }
 });
 
@@ -61,24 +105,100 @@ router.post('/:id/members', async (req, res, next) => {
   try {
     const { user_id } = req.body;
     const db = getDb();
+    // Check member count
+    const [countRows] = await db.query(
+      'SELECT COUNT(*) AS cnt FROM group_members WHERE group_id = ?',
+      [req.params.id]
+    );
+    if (countRows[0].cnt >= MAX_GROUP_MEMBERS) {
+      return res.status(400).json({ error: `Group cannot exceed ${MAX_GROUP_MEMBERS} members` });
+    }
     await db.query(
       `INSERT IGNORE INTO group_members (group_id, user_id, role) VALUES (?, ?, 'member')`,
       [req.params.id, user_id]
     );
+    // Fetch group info to notify the new member
+    const [groups] = await db.query('SELECT id, name, avatar FROM `groups` WHERE id = ?', [req.params.id]);
+    sendToUser(user_id, { type: 'group_created', group: groups[0] });
     sendToGroup(req.params.id, { type: 'group_member_added', group_id: req.params.id, user_id });
     res.json({ ok: true });
   } catch (err) { next(err); }
 });
 
-// DELETE /api/groups/:id/members/:uid — remove member (owner/admin only simplified)
+// DELETE /api/groups/:id/members/me — leave group
+router.delete('/:id/members/me', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const [roleRows] = await db.query(
+      'SELECT role FROM group_members WHERE group_id = ? AND user_id = ?',
+      [req.params.id, req.user.id]
+    );
+    if (!roleRows.length) return res.status(404).json({ error: 'Not in this group' });
+    if (roleRows[0].role === 'owner') {
+      return res.status(400).json({ error: 'Owner cannot leave. Transfer ownership or disband the group.' });
+    }
+    await db.query(
+      'DELETE FROM group_members WHERE group_id = ? AND user_id = ?',
+      [req.params.id, req.user.id]
+    );
+    await sendToGroup(req.params.id, {
+      type: 'group_member_removed', group_id: req.params.id, user_id: req.user.id,
+    });
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+// DELETE /api/groups/:id/members/:uid — remove member (owner/admin only)
 router.delete('/:id/members/:uid', async (req, res, next) => {
   try {
     const db = getDb();
+    // Check caller is owner or admin
+    const [roleRows] = await db.query(
+      'SELECT role FROM group_members WHERE group_id = ? AND user_id = ?',
+      [req.params.id, req.user.id]
+    );
+    if (!roleRows.length || !['owner', 'admin'].includes(roleRows[0].role)) {
+      return res.status(403).json({ error: 'Only owner or admin can remove members' });
+    }
     await db.query(
       'DELETE FROM group_members WHERE group_id = ? AND user_id = ?',
       [req.params.id, req.params.uid]
     );
+    sendToUser(req.params.uid, {
+      type: 'group_member_removed', group_id: req.params.id, user_id: req.params.uid,
+    });
+    await sendToGroup(req.params.id, {
+      type: 'group_member_removed', group_id: req.params.id, user_id: req.params.uid,
+    });
     res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+// DELETE /api/groups/:id — disband group (owner only)
+router.delete('/:id', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const [groups] = await db.query('SELECT owner_id FROM `groups` WHERE id = ?', [req.params.id]);
+    if (!groups.length) return res.status(404).json({ error: 'Group not found' });
+    if (groups[0].owner_id !== req.user.id) {
+      return res.status(403).json({ error: 'Only the owner can disband the group' });
+    }
+    await sendToGroup(req.params.id, { type: 'group_disbanded', group_id: req.params.id });
+    await db.query('DELETE FROM `groups` WHERE id = ?', [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+// PATCH /api/groups/:id/mute — toggle mute (any member)
+router.patch('/:id/mute', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const muted = req.body.muted ? 1 : 0;
+    await db.query(
+      'UPDATE group_members SET muted = ? WHERE group_id = ? AND user_id = ?',
+      [muted, req.params.id, req.user.id]
+    );
+    res.json({ ok: true, muted });
   } catch (err) { next(err); }
 });
 
