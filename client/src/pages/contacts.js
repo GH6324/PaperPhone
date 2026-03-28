@@ -90,17 +90,24 @@ export function renderContacts(root) {
       reqs.forEach(r => {
         const item = document.createElement('div');
         item.className = 'list-item';
+        item.style.cssText = 'align-items:flex-start;';
         const av = avatarEl(r.nickname || r.username, r.avatar, 'avatar-sm');
         item.appendChild(av);
         const info = document.createElement('div');
         info.className = 'flex-1';
+        let msgHtml = '';
+        if (r.message) {
+          msgHtml = `<div class="friend-req-msg">${esc(r.message)}</div>`;
+        }
         info.innerHTML = `
           <div style="font-size:15px;font-weight:500">${esc(r.nickname || r.username)}</div>
-          <div class="text-muted" style="font-size:13px">@${esc(r.username)}</div>`;
+          <div class="text-muted" style="font-size:13px">@${esc(r.username)}</div>
+          ${msgHtml}`;
         item.appendChild(info);
         const btn = document.createElement('button');
         btn.className = 'btn-pill btn-green';
         btn.textContent = t('accept');
+        btn.style.flexShrink = '0';
         btn.onclick = async e => {
           e.stopPropagation();
           try {
@@ -235,15 +242,9 @@ export function renderContacts(root) {
             const btn = document.createElement('button');
             btn.className = 'btn-pill btn-green';
             btn.textContent = t('add');
-            btn.onclick = async e => {
+            btn.onclick = e => {
               e.stopPropagation();
-              try {
-                await api.sendRequest(u.id);
-                showToast(t('requestSent'));
-                btn.textContent = t('sent');
-                btn.disabled = true;
-                btn.className = 'btn-pill btn-outline';
-              } catch (err) { showToast(err.message); }
+              showFriendRequestModal(u, btn);
             };
             item.appendChild(btn);
           }
@@ -256,6 +257,66 @@ export function renderContacts(root) {
   renderFriendList();
   loadRequests();
   loadTags();
+}
+
+function showFriendRequestModal(user, addBtn) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-card" style="width:88%;max-width:380px;">
+      <div class="modal-header">
+        <div style="min-width:44px"></div>
+        <div class="topbar-title" style="font-size:16px">${t('friendRequestTitle')}</div>
+        <div style="min-width:44px"></div>
+      </div>
+      <div style="padding:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <div style="font-size:15px;font-weight:500">${esc(user.nickname || user.username)}</div>
+          <div class="text-muted" style="font-size:13px">@${esc(user.username)}</div>
+        </div>
+        <textarea id="fr-message" rows="4" maxlength="512"
+          placeholder="${t('friendRequestPlaceholder')}"
+          style="width:100%;box-sizing:border-box;border-radius:10px;border:1px solid var(--border);padding:10px 12px;font-size:14px;resize:none;background:var(--surface-2);color:var(--text);font-family:inherit;"></textarea>
+        <div style="text-align:right;margin-top:4px;">
+          <span id="fr-counter" class="text-muted" style="font-size:12px;">0/512</span>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:14px;">
+          <button id="fr-cancel" class="btn-pill btn-outline" style="flex:1">${t('cancel')}</button>
+          <button id="fr-send" class="btn-pill btn-green" style="flex:1">${t('sendRequest')}</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+
+  const textarea = overlay.querySelector('#fr-message');
+  const counter = overlay.querySelector('#fr-counter');
+  const cancelBtn = overlay.querySelector('#fr-cancel');
+  const sendBtn = overlay.querySelector('#fr-send');
+
+  textarea.addEventListener('input', () => {
+    counter.textContent = `${textarea.value.length}/512`;
+  });
+  textarea.focus();
+
+  cancelBtn.onclick = () => overlay.remove();
+  sendBtn.onclick = async () => {
+    sendBtn.disabled = true;
+    sendBtn.textContent = '...';
+    try {
+      await api.sendRequest(user.id, textarea.value.trim());
+      showToast(t('requestSent'));
+      addBtn.textContent = t('sent');
+      addBtn.disabled = true;
+      addBtn.className = 'btn-pill btn-outline';
+      overlay.remove();
+    } catch (err) {
+      showToast(err.message);
+      sendBtn.disabled = false;
+      sendBtn.textContent = t('sendRequest');
+    }
+  };
 }
 
 function esc(s) {

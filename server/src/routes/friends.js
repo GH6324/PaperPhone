@@ -46,7 +46,7 @@ router.get('/requests', async (req, res, next) => {
   try {
     const db = getDb();
     const [rows] = await db.query(
-      `SELECT f.id as req_id, u.id, u.username, u.nickname, u.avatar, f.created_at
+      `SELECT f.id as req_id, u.id, u.username, u.nickname, u.avatar, f.message, f.created_at
        FROM friends f
        JOIN users u ON u.id = f.user_id
        WHERE f.friend_id = ? AND f.status = 'pending'`,
@@ -59,15 +59,22 @@ router.get('/requests', async (req, res, next) => {
 // POST /api/friends/request — send friend request
 router.post('/request', async (req, res, next) => {
   try {
-    const { friend_id } = req.body;
+    const { friend_id, message } = req.body;
     if (!friend_id || friend_id === req.user.id) return res.status(400).json({ error: 'Invalid friend_id' });
+    const msg = message ? String(message).slice(0, 512) : null;
     const db = getDb();
+
+    // Idempotent migration: ensure message column exists
+    try {
+      await db.query(`ALTER TABLE friends ADD COLUMN message VARCHAR(512) DEFAULT NULL AFTER auto_delete`);
+    } catch { /* column already exists */ }
+
     await db.query(
-      `INSERT IGNORE INTO friends (user_id, friend_id, status) VALUES (?, ?, 'pending')`,
-      [req.user.id, friend_id]
+      `INSERT IGNORE INTO friends (user_id, friend_id, status, message) VALUES (?, ?, 'pending', ?)`,
+      [req.user.id, friend_id, msg]
     );
     // Notify recipient via WebSocket if online
-    const delivered = sendToUser(friend_id, { type: 'friend_request', from: req.user.id });
+    const delivered = sendToUser(friend_id, { type: 'friend_request', from: req.user.id, message: msg });
     // Push notification if offline
     if (!delivered) {
       const [senderRows] = await db.query('SELECT nickname, username FROM users WHERE id = ?', [req.user.id]);
@@ -75,7 +82,7 @@ router.post('/request', async (req, res, next) => {
       const pushPayload = {
         type: 'friend_request',
         title: 'PaperPhone',
-        body: `${senderName} sent you a friend request`,
+        body: msg ? `${senderName}: ${msg.slice(0, 100)}` : `${senderName} sent you a friend request`,
         data: { type: 'friend_request', from: req.user.id },
       };
       pushToUser(friend_id, pushPayload).catch(() => {});

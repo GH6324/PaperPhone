@@ -2334,3 +2334,18 @@ html, body {
     color: #ffcc00;
   }
 }
+
+/* ── Friend Request Message ──────────────────────────────────── */
+.friend-req-msg {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface-2, rgba(0,0,0,0.03));
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary, #666);
+  word-break: break-word;
+  white-space: pre-wrap;
+  max-height: 80px;
+  overflow-y: auto;
+}

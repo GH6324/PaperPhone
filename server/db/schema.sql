@@ -63,6 +63,16 @@ PREPARE f_stmt FROM @f_sql;
 EXECUTE f_stmt;
 DEALLOCATE PREPARE f_stmt;
 
+-- Migration: add message to friends (idempotent) — friend request message (≤512 chars)
+SET @f_msg = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'friends' AND COLUMN_NAME = 'message');
+SET @f_msg_sql = IF(@f_msg = 0,
+  'ALTER TABLE friends ADD COLUMN message VARCHAR(512) DEFAULT NULL AFTER auto_delete',
+  'SELECT 1');
+PREPARE f_msg_stmt FROM @f_msg_sql;
+EXECUTE f_msg_stmt;
+DEALLOCATE PREPARE f_msg_stmt;
+
 -- ── Groups ────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS `groups` (
   id          VARCHAR(36)   PRIMARY KEY,

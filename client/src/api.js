@@ -51,7 +51,7 @@ export const api = {
   // Friends
   friends:        ()  => req('GET',  '/api/friends'),
   friendRequests: ()  => req('GET',  '/api/friends/requests'),
-  sendRequest:    id  => req('POST', '/api/friends/request', { friend_id: id }),
+  sendRequest:    (id, msg) => req('POST', '/api/friends/request', { friend_id: id, message: msg || null }),
   acceptFriend:   uid => req('POST', '/api/friends/accept', { user_id: uid }),
   removeFriend:   id  => req('DELETE', `/api/friends/${id}`),
 
