@@ -1,5 +1,7 @@
 # PaperPhone IM
 
+🌐 **其他语言 / Other Languages:** [English](README_EN.md) · [日本語](README_JA.md) · [한국어](README_KO.md) · [Français](README_FR.md) · [Deutsch](README_DE.md) · [Русский](README_RU.md) · [Español](README_ES.md)
+
 一款微信风格的端对端加密即时通讯应用，采用无状态 ECDH + XSalsa20-Poly1305 逐消息加密，支持 iOS PWA 永久免签与 Cloudflare R2 文件存储。
 
 [![Node.js](https://img.shields.io/badge/Node.js-20+-green)](#) [![MySQL](https://img.shields.io/badge/MySQL-8.0-blue)](#) [![Redis](https://img.shields.io/badge/Redis-7.x-red)](#) [![WebRTC](https://img.shields.io/badge/WebRTC-P2P%20%2B%20Mesh-orange)](#)
@@ -19,10 +21,11 @@
 | 👥 群聊 | 最多 2000 人群组，纯文本消息（无加密），免打扰模式，成员管理 |
 | ⏱️ 消息自动删除 | 5 档可选（永不/1天/3天/1周/1月），私聊双方均可设置，群聊群主专属 |
 | 🔔 消息推送 | Web Push (VAPID) + OneSignal 双通道，离线也能收到通知 |
-| 🌐 多语言 | 中文、英文、日语、韩语、法语（自动检测 + 手动切换） |
+| 🌐 多语言 | 中文、英文、日语、韩语、法语、德语、俄语、西班牙语（自动检测 + 手动切换） |
 | 📱 iOS 永久免签 | PWA H5 → Safari「添加到主屏幕」，无需企业证书 |
 | 💬 消息功能 | 文字、图片、语音消息、Emoji 面板（64 个）、已读状态 |
-| 🌐 朋友圈 | 发动态（文字+最多9张图）、点赞、评论、好友动态流 |
+| 🌐 朋友圈 | 发动态（文字+最多9张图）、点赞（显示好友头像）、评论、标签可见性控制 |
+| 🏷️ 好友标签 | 为好友设置多个标签（12色预设调色板），按标签分类筛选通讯录 |
 | 🗂️ R2 对象存储 | Cloudflare R2 存储图片/语音，可选公开 CDN 直链 |
 | 🏗️ 可自托管 | Docker Compose 一键部署，支持 Node.js + Redis 多节点 |
 
@@ -285,7 +288,7 @@ paperphone/
         ├── app.js              # 路由 + 全局状态 + 来电监听
         ├── api.js              # HTTP 客户端
         ├── socket.js           # WebSocket 客户端（自动重连）
-        ├── i18n.js             # 多语言引擎（zh/en/ja/ko/fr）
+        ├── i18n.js             # 多语言引擎（zh/en/ja/ko/fr/de/ru/es）
         ├── services/
         │   ├── webrtc.js       # WebRTC 管理器（CallManager）
         │   └── pushNotification.js  # 推送订阅管理（Web Push + Median 桥接）
