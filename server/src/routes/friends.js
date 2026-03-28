@@ -13,7 +13,7 @@ router.get('/', async (req, res, next) => {
   try {
     const db = getDb();
     const [rows] = await db.query(
-      `SELECT u.id, u.username, u.nickname, u.avatar, u.is_online, u.last_seen
+      `SELECT u.id, u.username, u.nickname, u.avatar, u.is_online, u.last_seen, f.auto_delete
        FROM friends f
        JOIN users u ON u.id = f.friend_id
        WHERE f.user_id = ? AND f.status = 'accepted'`,
@@ -95,6 +95,30 @@ router.delete('/:id', async (req, res, next) => {
       [req.user.id, req.params.id, req.params.id, req.user.id]
     );
     res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+// PATCH /api/friends/:id/auto-delete — set auto-delete timer for private chat
+router.patch('/:id/auto-delete', async (req, res, next) => {
+  try {
+    const allowed = [0, 86400, 259200, 604800, 2592000];
+    const val = parseInt(req.body.auto_delete);
+    if (!allowed.includes(val)) return res.status(400).json({ error: 'Invalid auto_delete value' });
+    const db = getDb();
+    // Update both directions of the friendship
+    await db.query(
+      `UPDATE friends SET auto_delete = ? WHERE
+        (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)`,
+      [val, req.user.id, req.params.id, req.params.id, req.user.id]
+    );
+    // Notify the other party via WS
+    sendToUser(req.params.id, {
+      type: 'auto_delete_changed',
+      chat_id: req.user.id,
+      chat_type: 'private',
+      auto_delete: val,
+    });
+    res.json({ ok: true, auto_delete: val });
   } catch (err) { next(err); }
 });
 

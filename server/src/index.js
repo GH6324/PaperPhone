@@ -37,7 +37,55 @@ async function main() {
 
   server.listen(PORT, () => {
     console.log(`🚀 PaperPhone server running on http://localhost:${PORT}`);
+    startMessageCleanup();
   });
+}
+
+/**
+ * Periodic cleanup — delete expired messages based on auto_delete settings.
+ * Runs every hour.
+ */
+function startMessageCleanup() {
+  const INTERVAL = 60 * 60 * 1000; // 1 hour
+
+  async function cleanup() {
+    try {
+      const db = getDb();
+
+      // Delete expired private messages
+      const [privResult] = await db.query(`
+        DELETE m FROM messages m
+        JOIN friends f ON (
+          (f.user_id = m.from_id AND f.friend_id = m.to_id)
+          OR (f.user_id = m.to_id AND f.friend_id = m.from_id)
+        )
+        WHERE m.type = 'private'
+          AND f.auto_delete > 0
+          AND m.created_at < DATE_SUB(NOW(), INTERVAL f.auto_delete SECOND)
+      `);
+
+      // Delete expired group messages
+      const [grpResult] = await db.query(`
+        DELETE m FROM messages m
+        JOIN \`groups\` g ON g.id = m.to_id
+        WHERE m.type = 'group'
+          AND g.auto_delete > 0
+          AND m.created_at < DATE_SUB(NOW(), INTERVAL g.auto_delete SECOND)
+      `);
+
+      const total = (privResult.affectedRows || 0) + (grpResult.affectedRows || 0);
+      if (total > 0) {
+        console.log(`🗑️  Auto-deleted ${total} expired messages`);
+      }
+    } catch (err) {
+      console.error('Message cleanup error:', err.message);
+    }
+  }
+
+  // Run once on startup, then every hour
+  cleanup();
+  setInterval(cleanup, INTERVAL);
+  console.log('⏱️  Message auto-delete cleanup scheduled (every 1h)');
 }
 
 main().catch(err => {

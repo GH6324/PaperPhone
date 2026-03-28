@@ -116,6 +116,48 @@ export async function renderGroupInfo(root, groupId) {
   muteSection.appendChild(muteRow);
   content.appendChild(muteSection);
 
+  // ── Auto-Delete Setting ──
+  const autoDeleteLabels = {
+    0: t('autoDeleteNever'), 86400: t('autoDelete1d'),
+    259200: t('autoDelete3d'), 604800: t('autoDelete7d'),
+    2592000: t('autoDelete30d'),
+  };
+  const groupAutoDelete = info.auto_delete ?? 604800;
+
+  const adSection = document.createElement('div');
+  adSection.className = 'settings-section';
+  const adRow = document.createElement('div');
+  adRow.className = 'list-item';
+  adRow.style.cssText = isOwner ? 'cursor:pointer;' : '';
+  adRow.innerHTML = `
+    <div style="flex:1;display:flex;align-items:center;gap:10px;">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="var(--text-muted)">
+        <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+      </svg>
+      <span style="font-size:15px;font-weight:500;">${t('autoDeleteTitle')}</span>
+    </div>
+    <span id="ad-value" class="text-muted" style="font-size:14px;">${autoDeleteLabels[groupAutoDelete] || autoDeleteLabels[604800]}</span>
+  `;
+  if (isOwner) {
+    adRow.onclick = () => {
+      showGroupAutoDeletePicker(groupAutoDelete, async (val) => {
+        try {
+          await api.setGroupAutoDelete(groupId, val);
+          adRow.querySelector('#ad-value').textContent = autoDeleteLabels[val];
+          showToast(t('autoDeleteUpdated'));
+        } catch (err) { showToast(err.message); }
+      });
+    };
+  }
+  adSection.appendChild(adRow);
+  if (!isOwner) {
+    const hint = document.createElement('div');
+    hint.style.cssText = 'padding:4px 16px 8px;font-size:12px;color:var(--text-muted);';
+    hint.textContent = t('autoDeleteOwnerOnly');
+    adSection.appendChild(hint);
+  }
+  content.appendChild(adSection);
+
   // ── Members ──
   const membersSection = document.createElement('div');
   membersSection.className = 'settings-section';
@@ -267,5 +309,46 @@ function showAddMemberModal(groupId, existingIds, contentEl, membersSection) {
     };
     item.appendChild(addBtn);
     pickerEl.appendChild(item);
+  });
+}
+
+function showGroupAutoDeletePicker(current, onSelect) {
+  const options = [
+    { value: 0,       label: t('autoDeleteNever') },
+    { value: 86400,   label: t('autoDelete1d') },
+    { value: 259200,  label: t('autoDelete3d') },
+    { value: 604800,  label: t('autoDelete7d') },
+    { value: 2592000, label: t('autoDelete30d') },
+  ];
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-card" style="width:85%;max-width:360px;">
+      <div class="modal-header">
+        <div style="min-width:44px"></div>
+        <div class="topbar-title" style="font-size:16px">${t('autoDeleteTitle')}</div>
+        <div style="min-width:44px"></div>
+      </div>
+      <div id="ad-options" style="padding:8px 0;"></div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+
+  const list = overlay.querySelector('#ad-options');
+  options.forEach(opt => {
+    const row = document.createElement('div');
+    row.className = 'list-item';
+    row.style.cssText = 'cursor:pointer;justify-content:space-between;padding:14px 20px;';
+    const isActive = current === opt.value;
+    row.innerHTML = `
+      <span style="font-size:15px;font-weight:${isActive ? '600' : '400'};color:${isActive ? 'var(--green)' : 'var(--text)'};">${opt.label}</span>
+      ${isActive ? '<svg viewBox="0 0 24 24" width="20" height="20" fill="var(--green)"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>' : ''}
+    `;
+    row.onclick = () => {
+      overlay.remove();
+      if (opt.value !== current) onSelect(opt.value);
+    };
+    list.appendChild(row);
   });
 }

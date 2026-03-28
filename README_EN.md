@@ -16,6 +16,7 @@ A WeChat-style end-to-end encrypted instant messaging app with stateless ECDH + 
 | 🗑️ Zero-Knowledge Server | Server stores only ciphertext; private keys never leave the device |
 | 📹 Video & Voice Calls | WebRTC P2P (1:1) + Mesh (group), Cloudflare TURN for NAT traversal |
 | 👥 Group Chat | Up to 2000 members, plain-text messages (no encryption), Do Not Disturb mode, member management |
+| ⏱️ Auto-Delete Messages | 5 tiers (never / 1 day / 3 days / 1 week / 1 month), settable by either party in DMs, owner-only in groups |
 | 🔔 Push Notifications | Web Push (VAPID) + OneSignal dual-channel  — reach users even when offline |
 | 🌐 Multi-Language | Chinese, English, Japanese, Korean, French — auto-detect + manual switch |
 | 📱 iOS — No Enterprise Cert | PWA via Safari "Add to Home Screen", works permanently without Apple signing |

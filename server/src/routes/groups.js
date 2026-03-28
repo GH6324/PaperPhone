@@ -14,7 +14,7 @@ router.get('/', async (req, res, next) => {
   try {
     const db = getDb();
     const [rows] = await db.query(
-      `SELECT g.id, g.name, g.avatar, g.notice, g.owner_id, gm.role, gm.muted,
+      `SELECT g.id, g.name, g.avatar, g.notice, g.owner_id, g.auto_delete, gm.role, gm.muted,
               (SELECT COUNT(*) FROM group_members WHERE group_id = g.id) AS member_count
        FROM group_members gm
        JOIN \`groups\` g ON g.id = gm.group_id
@@ -186,6 +186,29 @@ router.delete('/:id', async (req, res, next) => {
     await sendToGroup(req.params.id, { type: 'group_disbanded', group_id: req.params.id });
     await db.query('DELETE FROM `groups` WHERE id = ?', [req.params.id]);
     res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+// PATCH /api/groups/:id/auto-delete — set auto-delete timer (owner only)
+router.patch('/:id/auto-delete', async (req, res, next) => {
+  try {
+    const allowed = [0, 86400, 259200, 604800, 2592000];
+    const val = parseInt(req.body.auto_delete);
+    if (!allowed.includes(val)) return res.status(400).json({ error: 'Invalid auto_delete value' });
+    const db = getDb();
+    const [groups] = await db.query('SELECT owner_id FROM `groups` WHERE id = ?', [req.params.id]);
+    if (!groups.length) return res.status(404).json({ error: 'Group not found' });
+    if (groups[0].owner_id !== req.user.id) {
+      return res.status(403).json({ error: 'Only the owner can set auto-delete' });
+    }
+    await db.query('UPDATE `groups` SET auto_delete = ? WHERE id = ?', [val, req.params.id]);
+    await sendToGroup(req.params.id, {
+      type: 'auto_delete_changed',
+      chat_id: req.params.id,
+      chat_type: 'group',
+      auto_delete: val,
+    });
+    res.json({ ok: true, auto_delete: val });
   } catch (err) { next(err); }
 });
 

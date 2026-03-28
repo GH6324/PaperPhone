@@ -65,6 +65,8 @@ export const api = {
   leaveGroup:   id  => req('DELETE', `/api/groups/${id}/members/me`),
   disbandGroup: id  => req('DELETE', `/api/groups/${id}`),
   muteGroup:    (id, muted) => req('PATCH', `/api/groups/${id}/mute`, { muted }),
+  setAutoDelete:      (friendId, val) => req('PATCH', `/api/friends/${friendId}/auto-delete`, { auto_delete: val }),
+  setGroupAutoDelete: (groupId, val)  => req('PATCH', `/api/groups/${groupId}/auto-delete`, { auto_delete: val }),
 
   // Messages
   privateHistory: pid => req('GET', `/api/messages/private/${pid}`),

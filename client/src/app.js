@@ -282,6 +282,17 @@ function setupGlobalSocketHandlers() {
     }
   });
 
+  // ── Auto-delete setting changed by other party ───────────────────────
+  onEvent('auto_delete_changed', ({ chat_id, chat_type, auto_delete }) => {
+    if (chat_type === 'private') {
+      const contact = state.contacts.find(c => c.id === chat_id);
+      if (contact) contact.auto_delete = auto_delete;
+    } else {
+      const group = (state.groupsList || []).find(g => g.id === chat_id);
+      if (group) group.auto_delete = auto_delete;
+    }
+  });
+
   // ── Session Revoked (device kicked by another session) ───────────────
   onEvent('session_revoked', () => {
     clearToken();

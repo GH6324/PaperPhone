@@ -46,11 +46,22 @@ CREATE TABLE IF NOT EXISTS friends (
   user_id     VARCHAR(36)     NOT NULL,
   friend_id   VARCHAR(36)     NOT NULL,
   status      ENUM('pending','accepted','blocked') NOT NULL DEFAULT 'pending',
+  auto_delete INT             NOT NULL DEFAULT 604800,
   created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uk_pair (user_id, friend_id),
   FOREIGN KEY (user_id)   REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Migration: add auto_delete to friends (idempotent)
+SET @f_ad = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'friends' AND COLUMN_NAME = 'auto_delete');
+SET @f_sql = IF(@f_ad = 0,
+  'ALTER TABLE friends ADD COLUMN auto_delete INT NOT NULL DEFAULT 604800 AFTER status',
+  'SELECT 1');
+PREPARE f_stmt FROM @f_sql;
+EXECUTE f_stmt;
+DEALLOCATE PREPARE f_stmt;
 
 -- ── Groups ────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS `groups` (
@@ -59,9 +70,20 @@ CREATE TABLE IF NOT EXISTS `groups` (
   avatar      VARCHAR(512)  DEFAULT NULL,
   owner_id    VARCHAR(36)   NOT NULL,
   notice      TEXT          DEFAULT NULL,
+  auto_delete INT           NOT NULL DEFAULT 604800,
   created_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (owner_id) REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Migration: add auto_delete to groups (idempotent)
+SET @g_ad = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'groups' AND COLUMN_NAME = 'auto_delete');
+SET @g_sql = IF(@g_ad = 0,
+  'ALTER TABLE `groups` ADD COLUMN auto_delete INT NOT NULL DEFAULT 604800 AFTER notice',
+  'SELECT 1');
+PREPARE g_stmt FROM @g_sql;
+EXECUTE g_stmt;
+DEALLOCATE PREPARE g_stmt;
 
 -- ── Group Members ─────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS group_members (

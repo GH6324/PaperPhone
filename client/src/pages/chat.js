@@ -32,6 +32,12 @@ export async function renderChat(root, chat) {
           <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
         </svg>
       </button>` : ''}
+      ${chat.type === 'private' ? `
+      <button class="topbar-btn" id="auto-delete-btn" title="${t('autoDeleteTitle')}">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+          <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+        </svg>
+      </button>` : ''}
       <button class="topbar-btn" id="voice-call-btn" title="${t('callVoice')}">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
           <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.27-.27.67-.36 1.02-.23 1.12.45 2.34.68 3.58.68.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.3 21 3 13.7 3 4.5c0-.55.45-1 1-1H8c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.1.35.02.74-.22 1.02L6.6 10.8z"/>
@@ -51,6 +57,19 @@ export async function renderChat(root, chat) {
   // Group info button
   topbar.querySelector('#group-info-btn')?.addEventListener('click', () => {
     openGroupInfo(chat.id);
+  });
+
+  // Auto-delete button (private chats)
+  topbar.querySelector('#auto-delete-btn')?.addEventListener('click', () => {
+    const contact = state.contacts.find(c => c.id === chat.id);
+    const current = contact?.auto_delete ?? 604800;
+    showAutoDeletePicker(current, async (val) => {
+      try {
+        await api.setAutoDelete(chat.id, val);
+        if (contact) contact.auto_delete = val;
+        showToast(t('autoDeleteUpdated'));
+      } catch (err) { showToast(err.message); }
+    });
   });
 
   // Call buttons
@@ -530,4 +549,45 @@ function showImageViewer(src) {
   viewer.querySelector('.img-viewer-close').onclick = () => viewer.remove();
   viewer.onclick = e => { if (e.target === viewer) viewer.remove(); };
   document.body.appendChild(viewer);
+}
+
+function showAutoDeletePicker(current, onSelect) {
+  const options = [
+    { value: 0,       label: t('autoDeleteNever') },
+    { value: 86400,   label: t('autoDelete1d') },
+    { value: 259200,  label: t('autoDelete3d') },
+    { value: 604800,  label: t('autoDelete7d') },
+    { value: 2592000, label: t('autoDelete30d') },
+  ];
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-card" style="width:85%;max-width:360px;">
+      <div class="modal-header">
+        <div style="min-width:44px"></div>
+        <div class="topbar-title" style="font-size:16px">${t('autoDeleteTitle')}</div>
+        <div style="min-width:44px"></div>
+      </div>
+      <div id="ad-options" style="padding:8px 0;"></div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+
+  const list = overlay.querySelector('#ad-options');
+  options.forEach(opt => {
+    const row = document.createElement('div');
+    row.className = 'list-item';
+    row.style.cssText = 'cursor:pointer;justify-content:space-between;padding:14px 20px;';
+    const isActive = current === opt.value;
+    row.innerHTML = `
+      <span style="font-size:15px;font-weight:${isActive ? '600' : '400'};color:${isActive ? 'var(--green)' : 'var(--text)'};">${opt.label}</span>
+      ${isActive ? '<svg viewBox="0 0 24 24" width="20" height="20" fill="var(--green)"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>' : ''}
+    `;
+    row.onclick = () => {
+      overlay.remove();
+      if (opt.value !== current) onSelect(opt.value);
+    };
+    list.appendChild(row);
+  });
 }

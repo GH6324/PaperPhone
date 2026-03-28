@@ -184,6 +184,14 @@ const TRANSLATIONS = {
     muteGroup: '消息免打扰',
     muteEnabled: '已开启免打扰',
     muteDisabled: '已关闭免打扰',
+    autoDeleteTitle: '自动删除消息',
+    autoDeleteNever: '永不删除',
+    autoDelete1d: '1 天后',
+    autoDelete3d: '3 天后',
+    autoDelete7d: '1 周后',
+    autoDelete30d: '1 个月后',
+    autoDeleteUpdated: '自动删除已更新',
+    autoDeleteOwnerOnly: '只有群主可以设置',
   },
 
   en: {
@@ -358,6 +366,14 @@ const TRANSLATIONS = {
     muteGroup: 'Mute Notifications',
     muteEnabled: 'Notifications muted',
     muteDisabled: 'Notifications unmuted',
+    autoDeleteTitle: 'Auto-Delete Messages',
+    autoDeleteNever: 'Never',
+    autoDelete1d: 'After 1 Day',
+    autoDelete3d: 'After 3 Days',
+    autoDelete7d: 'After 1 Week',
+    autoDelete30d: 'After 1 Month',
+    autoDeleteUpdated: 'Auto-delete updated',
+    autoDeleteOwnerOnly: 'Only owner can set',
   },
 
   ja: {
@@ -532,6 +548,14 @@ const TRANSLATIONS = {
     muteGroup: '通知ミュート',
     muteEnabled: '通知をミュートしました',
     muteDisabled: '通知のミュートを解除しました',
+    autoDeleteTitle: 'メッセージ自动削除',
+    autoDeleteNever: '削除しない',
+    autoDelete1d: '1日後',
+    autoDelete3d: '3日後',
+    autoDelete7d: '1週間後',
+    autoDelete30d: '1か月後',
+    autoDeleteUpdated: '自动削除が更新されました',
+    autoDeleteOwnerOnly: 'オーナーのみ設定可',
   },
 
   ko: {
@@ -706,6 +730,14 @@ const TRANSLATIONS = {
     muteGroup: '알림 음소거',
     muteEnabled: '알림이 음소거되었습니다',
     muteDisabled: '알림 음소거가 해제되었습니다',
+    autoDeleteTitle: '메시지 자동 삭제',
+    autoDeleteNever: '삭제 안 함',
+    autoDelete1d: '1일 후',
+    autoDelete3d: '3일 후',
+    autoDelete7d: '1주일 후',
+    autoDelete30d: '1개월 후',
+    autoDeleteUpdated: '자동 삭제가 업데이트되었습니다',
+    autoDeleteOwnerOnly: '그룹장만 설정 가능',
   },
 
   fr: {
@@ -880,6 +912,14 @@ const TRANSLATIONS = {
     muteGroup: 'Mettre en sourdine',
     muteEnabled: 'Notifications désactivées',
     muteDisabled: 'Notifications réactivées',
+    autoDeleteTitle: 'Suppression auto des messages',
+    autoDeleteNever: 'Jamais',
+    autoDelete1d: 'Après 1 jour',
+    autoDelete3d: 'Après 3 jours',
+    autoDelete7d: 'Après 1 semaine',
+    autoDelete30d: 'Après 1 mois',
+    autoDeleteUpdated: 'Suppression auto mise à jour',
+    autoDeleteOwnerOnly: 'Seul le propriétaire peut définir',
   },
 };
 
