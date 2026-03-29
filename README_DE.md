@@ -175,6 +175,7 @@ Server sieht: ✅ Chiffretext + Routing-Metadaten  ❌ Klartext / private Schlü
 | `ONESIGNAL_APP_ID` | OneSignal App ID (optional) | — |
 | `ONESIGNAL_REST_KEY` | OneSignal REST Key (optional) | — |
 | `TELEGRAM_BOT_TOKEN` | Telegram Bot Token (optional, Sticker-Proxy) | — |
+| `STICKER_PACKS` | Benutzerdefinierte Stickerpakete (optional, kommagetrennt `Name:Label`, unbegrenzt) | 8 Standard-Pakete |
 
 ---
 

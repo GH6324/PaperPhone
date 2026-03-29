@@ -371,6 +371,7 @@ paperphone/
 | `ONESIGNAL_APP_ID` | OneSignal App ID（可选，Median.co） | — |
 | `ONESIGNAL_REST_KEY` | OneSignal REST API Key（可选） | — |
 | `TELEGRAM_BOT_TOKEN` | Telegram Bot Token（可选，贴纸包代理） | — |
+| `STICKER_PACKS` | 自定义贴纸包列表（可选，逗号分隔 `包名:显示名`，数量无上限） | 内置 8 个默认包 |
 ---
 如果这个项目对你有用的话，请我喝罐可乐吧。
 <img width=30% height=30% src="https://raw.githubusercontent.com/619dev/PaperPhone/main/%E8%AF%B7%E6%88%91%E5%96%9D%E5%8F%AF%E4%B9%90.jpg" alt="qrcode">

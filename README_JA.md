@@ -314,6 +314,7 @@ server {
 | `ONESIGNAL_APP_ID` | OneSignal App ID（任意、Median.co用） | — |
 | `ONESIGNAL_REST_KEY` | OneSignal REST API Key（任意） | — |
 | `TELEGRAM_BOT_TOKEN` | Telegram Bot Token（任意、ステッカープロキシ） | — |
+| `STICKER_PACKS` | カスタムステッカーパック（任意、カンマ区切り `名前:ラベル`、無制限） | デフォルト8パック |
 
 ---
 

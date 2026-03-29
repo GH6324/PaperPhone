@@ -175,6 +175,7 @@ npx web-push generate-vapid-keys
 | `ONESIGNAL_APP_ID` | OneSignal App ID (опц.) | — |
 | `ONESIGNAL_REST_KEY` | OneSignal REST Key (опц.) | — |
 | `TELEGRAM_BOT_TOKEN` | Telegram Bot Token (опц., прокси стикеров) | — |
+| `STICKER_PACKS` | Список стикер-паков (опц., через запятую `имя:метка`, без ограничений) | 8 встр. паков |
 
 ---
 

@@ -437,13 +437,19 @@ export async function renderChat(root, chat) {
     { icon: '💡', label: 'Objects', emojis: ['💡','🔦','🕯️','📱','💻','⌨️','🖥️','🖨️','🖱️','🖲️','💾','💿','📀','📷','📹','🎥','📞','☎️','📺','📻','🎙️','⏰','⌚','📡','🔋','🪫','🔌','💰','💸','💳','💎','⚖️','🔧','🪛','🔨','⛏️','🪚','🔩','⚙️','🧲','🔬','🔭','📡','💉','💊','🩹','🩺','🚪','🪞','🛏️','🪑','🚽','🧹','🧺','🧼','📦','📮','📬','📨','📩','📝','📁','📂','📅','📆','📎','📌','📍','✂️','🔒','🔓','🗝️','🔑'] },
   ];
 
-  const STICKER_PACKS = [
-    { name: 'asterism_by_favorite_stickers_bot', label: 'Asterism' },
-    { name: 'in_DFCEDC_by_NaiDrawBot', label: 'DFCEDC' },
-    { name: 'sevendays_holidays_by_favorite_stickers_bot', label: '7 Days' },
-    { name: 'marching_pockets_by_favorite_stickers_bot', label: 'Pockets' },
-    { name: 'triedge_by_favorite_stickers_bot', label: 'Triedge' },
-  ];
+  // Sticker packs — fetched dynamically from server config
+  let _stickerPacksList = null; // cached after first fetch
+  async function getStickerPacks() {
+    if (_stickerPacksList) return _stickerPacksList;
+    try {
+      const { packs } = await api.stickerPacks();
+      _stickerPacksList = packs || [];
+    } catch {
+      // Fallback to empty if server is unreachable
+      _stickerPacksList = [];
+    }
+    return _stickerPacksList;
+  }
 
   const RECENT_KEY = 'pp_recent_emoji';
   function getRecentEmojis() {
@@ -620,7 +626,7 @@ export async function renderChat(root, chat) {
     }
 
     // ═══ Sticker Content ═══
-    function renderStickerContent() {
+    async function renderStickerContent() {
       contentWrap.innerHTML = '';
 
       // Pack tabs bar
@@ -632,6 +638,20 @@ export async function renderChat(root, chat) {
       const stickerGrid = document.createElement('div');
       stickerGrid.className = 'esp-sticker-grid';
       contentWrap.appendChild(stickerGrid);
+
+      // Show loading while fetching pack list
+      stickerGrid.innerHTML = '<div class="esp-sticker-status"><div class="esp-spinner"></div><span>Loading packs...</span></div>';
+
+      const STICKER_PACKS = await getStickerPacks();
+      stickerGrid.innerHTML = '';
+
+      if (STICKER_PACKS.length === 0) {
+        stickerGrid.innerHTML = '<div class="esp-sticker-status"><span style="font-size:24px">📭</span><span>No sticker packs configured</span></div>';
+        return;
+      }
+
+      // Clamp _currentPack to valid range
+      if (_currentPack >= STICKER_PACKS.length) _currentPack = 0;
 
       STICKER_PACKS.forEach((pack, i) => {
         const btn = document.createElement('button');

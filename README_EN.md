@@ -370,6 +370,7 @@ What the Server Sees:
 | `ONESIGNAL_APP_ID` | OneSignal App ID (optional, for Median.co) | — |
 | `ONESIGNAL_REST_KEY` | OneSignal REST API Key (optional) | — |
 | `TELEGRAM_BOT_TOKEN` | Telegram Bot Token (optional, sticker pack proxy) | — |
+| `STICKER_PACKS` | Custom sticker pack list (optional, comma-separated `name:label`, unlimited) | 8 built-in defaults |
 
 ---
 

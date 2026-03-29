@@ -111,6 +111,7 @@ export const api = {
   revokeAllOther: ()   => req('DELETE', '/api/sessions'),
 
   // Stickers (Telegram proxy)
+  stickerPacks:  ()     => req('GET', '/api/stickers/packs'),
   stickerSet:    (name) => req('GET', `/api/stickers/set/${encodeURIComponent(name)}`),
   stickerFileUrl: (fileId) => `${BASE}/api/stickers/file/${encodeURIComponent(fileId)}`,
 };

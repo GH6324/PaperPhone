@@ -139,6 +139,14 @@ spec:
         Token from @BotFather for proxying Telegram sticker packs.
         Leave blank to disable sticker packs.
 
+    - key: STICKER_PACKS
+      type: STRING
+      name: Sticker Packs (optional)
+      description: >-
+        Comma-separated list of Telegram sticker pack names with labels,
+        in the format name:label (e.g. pack_name:My Pack,other_pack:Other Pack).
+        No limit on quantity. Leave blank to use the 8 built-in defaults.
+
   services:
     # ── MySQL 8 ───────────────────────────────────────────────────────
     - name: MySQL
@@ -313,6 +321,8 @@ spec:
             default: ${ONESIGNAL_REST_KEY}
           TELEGRAM_BOT_TOKEN:
             default: ${TELEGRAM_BOT_TOKEN}
+          STICKER_PACKS:
+            default: ${STICKER_PACKS}
           SERVER_URL:
             default: ${ZEABUR_WEB_URL}
             expose: true
@@ -388,6 +398,13 @@ localization:
         type: STRING
         name: Telegram Bot Token（可选）
         description: 通过 @BotFather 获取的 Bot Token，用于代理 Telegram 贴纸包。留空则禁用贴纸功能。
+      - key: STICKER_PACKS
+        type: STRING
+        name: 贴纸包列表（可选）
+        description: >-
+          逗号分隔的 Telegram 贴纸包配置，格式为 包名:显示名称
+          （如 pack_name:我的贴纸,other_pack:另一个包）。数量无上限。
+          留空则使用内置的 8 个默认贴纸包。
     readme: |-
       # PaperPhone IM
 

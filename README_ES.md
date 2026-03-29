@@ -175,6 +175,7 @@ El servidor ve: ✅ texto cifrado + metadatos de enrutamiento  ❌ texto plano /
 | `ONESIGNAL_APP_ID` | OneSignal App ID (opc.) | — |
 | `ONESIGNAL_REST_KEY` | OneSignal REST Key (opc.) | — |
 | `TELEGRAM_BOT_TOKEN` | Telegram Bot Token (opc., proxy de stickers) | — |
+| `STICKER_PACKS` | Lista de packs de stickers (opc., separados por coma `nombre:etiqueta`, ilimitado) | 8 packs por defecto |
 
 ---
 

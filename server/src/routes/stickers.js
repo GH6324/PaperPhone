@@ -9,6 +9,36 @@ const TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const TG_API = `https://api.telegram.org/bot${TOKEN}`;
 const TG_FILE = `https://api.telegram.org/file/bot${TOKEN}`;
 
+// ── Default sticker packs (can be overridden via env) ────────
+const DEFAULT_PACKS = [
+  'asterism_by_favorite_stickers_bot:Asterism',
+  'in_DFCEDC_by_NaiDrawBot:DFCEDC',
+  'sevendays_holidays_by_favorite_stickers_bot:7 Days',
+  'marching_pockets_by_favorite_stickers_bot:Pockets',
+  'triedge_by_favorite_stickers_bot:Triedge',
+  'ongeki:Ongeki',
+  'LINE_YURU_YURI:Yuru Yuri',
+  'mingfengOuO:MingFeng',
+].join(',');
+
+function parseStickerPacks() {
+  const raw = process.env.STICKER_PACKS || DEFAULT_PACKS;
+  return raw
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
+    .map(entry => {
+      const idx = entry.indexOf(':');
+      if (idx === -1) return { name: entry, label: entry };
+      return { name: entry.slice(0, idx), label: entry.slice(idx + 1) };
+    });
+}
+
+// ── GET /api/stickers/packs — list of configured sticker packs ──
+router.get('/packs', (req, res) => {
+  res.json({ packs: parseStickerPacks() });
+});
+
 // ── In-memory caches ────────────────────────────────────────
 const setCache = new Map();   // name → { data, ts }
 const fileCache = new Map();  // file_id → { buffer, mime, ts }

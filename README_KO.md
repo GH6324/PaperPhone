@@ -314,6 +314,7 @@ server {
 | `ONESIGNAL_APP_ID` | OneSignal App ID (선택, Median.co용) | — |
 | `ONESIGNAL_REST_KEY` | OneSignal REST API Key (선택) | — |
 | `TELEGRAM_BOT_TOKEN` | Telegram Bot Token (선택, 스티커 팩 프록시) | — |
+| `STICKER_PACKS` | 사용자 정의 스티커 팩 목록 (선택, 쉼표 구분 `이름:라벨`, 무제한) | 기본 8개 팩 |
 
 ---
 
