@@ -27,6 +27,7 @@
 | 🌐 朋友圈 | 发动态（文字+最多9张图）、点赞（显示好友头像）、评论、标签可见性控制 |
 | 🏷️ 好友标签 | 为好友设置多个标签（12色预设调色板），按标签分类筛选通讯录 |
 | 🗂️ R2 对象存储 | Cloudflare R2 存储图片/语音，可选公开 CDN 直链 |
+| 🔑 两步验证 (2FA) | Google Authenticator 兼容 TOTP 验证，8 个一次性恢复码，登录时强制验证 |
 | 🏗️ 可自托管 | Docker Compose 一键部署，支持 Node.js + Redis 多节点 |
 
 ---
@@ -273,7 +274,8 @@ paperphone/
 │       │   ├── moments.js      # 朋友圈（动态/点赞/评论）
 │       │   ├── calls.js        # TURN 凭据派发
 │       │   ├── push.js         # 推送订阅管理（Web Push + OneSignal）
-│       │   └── stickers.js     # Telegram 贴纸包代理（缓存）
+│       │   ├── stickers.js     # Telegram 贴纸包代理（缓存）
+│       │   └── totp.js         # TOTP 两步验证（设置/验证/恢复码）
 │       ├── services/
 │       │   ├── push.js         # Web Push VAPID 服务
 │       │   └── onesignal.js    # OneSignal REST API 服务
@@ -312,7 +314,7 @@ paperphone/
 
 ## 数据库结构
 
-共 11 张表，首次启动自动创建（`CREATE TABLE IF NOT EXISTS`）：
+共 12 张表，首次启动自动创建（`CREATE TABLE IF NOT EXISTS`）：
 
 | 表名 | 说明 |
 |------|------|
@@ -327,6 +329,7 @@ paperphone/
 | `moment_comments` | 评论（最多 512 字/条） |
 | `push_subscriptions` | Web Push 推送订阅（VAPID） |
 | `onesignal_players` | OneSignal 设备注册（Median.co） |
+| `user_totp` | TOTP 两步验证密钥与恢复码 |
 
 ---
 

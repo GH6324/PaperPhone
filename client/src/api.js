@@ -114,6 +114,26 @@ export const api = {
   stickerPacks:  ()     => req('GET', '/api/stickers/packs'),
   stickerSet:    (name) => req('GET', `/api/stickers/set/${encodeURIComponent(name)}`),
   stickerFileUrl: (fileId) => `${BASE}/api/stickers/file/${encodeURIComponent(fileId)}`,
+
+  // TOTP 2FA
+  totpStatus:      ()    => req('GET',  '/api/totp/status'),
+  totpSetup:       ()    => req('POST', '/api/totp/setup'),
+  totpVerifySetup: (code) => req('POST', '/api/totp/verify-setup', { code }),
+  totpDisable:     (code) => req('POST', '/api/totp/disable', { code }),
+  totpVerifyLogin: (code, loginToken) => {
+    return fetch(`${BASE}/api/totp/verify-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, login_token: loginToken }),
+    }).then(async r => {
+      if (!r.ok) {
+        let msg = `HTTP ${r.status}`;
+        try { const j = await r.json(); msg = j.error || msg; } catch {}
+        throw new Error(msg);
+      }
+      return r.json();
+    });
+  },
 };
 
 export const WS_URL = (() => {

@@ -27,6 +27,7 @@ WeChat 스타일의 종단간 암호화 인스턴트 메시징 앱. 무상태 EC
 | 🌐 모먼트 | 텍스트 + 최대 9장 사진, 좋아요 (친구 아바타 표시), 댓글, 태그 기반 공개 범위 제어 |
 | 🏷️ 친구 태그 | 친구에게 여러 태그 할당 (12색 프리셋), 태그별 연락처 필터링 |
 | 🗂️ R2 오브젝트 스토리지 | Cloudflare R2로 이미지/음성 파일 저장 — 선택적 공개 CDN URL |
+| 🔑 2단계 인증 (2FA) | Google Authenticator 호환 TOTP, 8개 일회용 복구 코드, 로그인 시 강제 인증 |
 | 🏗️ 셀프 호스팅 가능 | Docker Compose 원커맨드 배포, Node.js + Redis 멀티 노드 지원 |
 
 ---
@@ -255,7 +256,7 @@ server {
 
 ## 데이터베이스 스키마
 
-11개 테이블, 서버 첫 시작 시 자동 생성 (`CREATE TABLE IF NOT EXISTS`):
+12개 테이블, 서버 첫 시작 시 자동 생성 (`CREATE TABLE IF NOT EXISTS`):
 
 | 테이블 | 용도 |
 |--------|------|
@@ -270,6 +271,7 @@ server {
 | `moment_comments` | 댓글 (≤ 512자) |
 | `push_subscriptions` | Web Push 구독 (VAPID) |
 | `onesignal_players` | OneSignal 기기 등록 (Median.co) |
+| `user_totp` | TOTP 2단계 인증 비밀 키 및 복구 코드 |
 
 ---
 

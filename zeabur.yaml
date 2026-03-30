@@ -30,6 +30,7 @@ spec:
     - 💬 Rich messaging: text, images, voice, 200+ emoji (8 categories), Telegram sticker packs, delivery receipts, typing indicators
     - 🗂️ **Cloudflare R2** file storage (images & voice messages)
     - 🏷️ **Friend Tags** — tag-based contact filtering & Moments visibility control
+    - 🔑 **Two-Factor Auth (2FA)** — Google Authenticator TOTP, 8 recovery codes
 
     ## After Deployment
     1. Open the domain assigned to the **client** service.
@@ -422,6 +423,7 @@ localization:
       - 💬 富文本消息、图片、语音、Emoji（200+，8 分类）、Telegram 贴纸包、送达回执、打字状态
       - 🗂️ **Cloudflare R2** 对象存储（图片与语音消息）
       - 🏷️ **好友标签** — 标签分类筛选通讯录 + 朋友圈可见性控制
+      - 🔑 **两步验证 (2FA)** — Google Authenticator TOTP，8 个恢复码
 
       ## 部署后操作
       1. 打开分配给 **client** 服务的域名。

@@ -27,6 +27,7 @@ Eine Instant-Messaging-App im WeChat-Stil mit Ende-zu-Ende-Verschlüsselung übe
 | 🌐 Momente | Sozialer Feed: Text + bis zu 9 Fotos, Likes (Freunde-Avatare), Kommentare, Tag-basierte Sichtbarkeit |
 | 🏷️ Freunde-Tags | Mehrere Tags pro Freund (12-Farben-Palette), Kontakte nach Tags filtern |
 | 🗂️ R2-Speicher | Cloudflare R2 für Bild-/Audiodateien — optionale CDN-URL |
+| 🔑 Zwei-Faktor-Auth (2FA) | Google Authenticator–kompatibles TOTP, 8 einmalige Wiederherstellungscodes, Pflichtprüfung bei Anmeldung |
 | 🏗️ Self-Hosting | Docker Compose Ein-Befehl-Deployment |
 
 ---
@@ -139,7 +140,7 @@ Server sieht: ✅ Chiffretext + Routing-Metadaten  ❌ Klartext / private Schlü
 
 ## Datenbankschema
 
-11 Tabellen, automatisch beim ersten Start erstellt:
+12 Tabellen, automatisch beim ersten Start erstellt:
 
 | Tabelle | Zweck |
 |---------|-------|
@@ -152,6 +153,7 @@ Server sieht: ✅ Chiffretext + Routing-Metadaten  ❌ Klartext / private Schlü
 | `moment_likes` / `moment_comments` | Likes + Kommentare |
 | `push_subscriptions` | Web Push (VAPID) |
 | `onesignal_players` | OneSignal-Geräte (Median.co) |
+| `user_totp` | TOTP-Zwei-Faktor-Authentifizierungsschlüssel und Wiederherstellungscodes |
 
 ---
 

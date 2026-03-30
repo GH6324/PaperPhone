@@ -2807,3 +2807,207 @@ html, body {
   max-height: 80px;
   overflow-y: auto;
 }
+
+/* ── TOTP 2FA ─────────────────────────────────────────────── */
+
+/* Shield icon on login 2FA screen */
+.totp-shield-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+  animation: totpPulse 2s ease-in-out infinite;
+}
+@keyframes totpPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+/* QR code section */
+.totp-qr-section {
+  text-align: center;
+}
+.totp-qr-wrap {
+  display: inline-block;
+  padding: 16px;
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+.totp-qr-image {
+  width: 220px;
+  height: 220px;
+  border-radius: var(--radius-xs);
+  display: block;
+}
+
+/* Secret key display */
+.totp-secret-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--surface);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 0.5px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  margin: 0 auto;
+  max-width: 380px;
+  flex-wrap: wrap;
+}
+.totp-secret-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  width: 100%;
+  text-align: center;
+  margin-bottom: 4px;
+}
+.totp-secret-code {
+  font-family: 'SF Mono', 'Fira Code', 'Menlo', 'Consolas', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 2px;
+  word-break: break-all;
+  user-select: all;
+}
+.totp-copy-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--green);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  transition: background .15s ease, transform .12s ease;
+}
+.totp-copy-btn:active {
+  background: rgba(7,193,96,.1);
+  transform: scale(0.9);
+}
+
+/* Status card */
+.totp-status-card {
+  text-align: center;
+  padding: 32px 16px;
+}
+.totp-status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--surface);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 0.5px solid var(--glass-border);
+  box-shadow: var(--glass-specular), var(--shadow);
+  color: var(--text-muted);
+}
+.totp-status-icon.totp-enabled {
+  background: rgba(52, 199, 89, 0.12);
+  color: #34C759;
+  border-color: rgba(52, 199, 89, 0.25);
+  box-shadow: 0 0 24px rgba(52, 199, 89, 0.15), var(--glass-specular);
+}
+.totp-status-text {
+  font-size: 15px;
+  color: var(--text-2);
+  line-height: 1.5;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+/* Setup intro */
+.totp-setup-intro {
+  text-align: center;
+  padding: 24px 16px;
+}
+
+/* Recovery codes grid */
+.totp-recovery-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  max-width: 360px;
+  margin: 0 auto;
+}
+.totp-recovery-code {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--surface);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 0.5px solid var(--glass-border);
+  border-radius: var(--radius-xs);
+  font-family: 'SF Mono', 'Fira Code', 'Menlo', 'Consolas', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 1px;
+  box-shadow: var(--glass-highlight);
+}
+.totp-recovery-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(7,193,96,.1);
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Recovery warning */
+.totp-recovery-warning {
+  font-size: 13px;
+  color: var(--orange, #FF9500);
+  text-align: center;
+  margin-top: 16px;
+  line-height: 1.4;
+}
+
+/* Secondary button style */
+.totp-secondary-btn {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border: 0.5px solid var(--glass-border) !important;
+  box-shadow: var(--glass-specular), var(--shadow-sm) !important;
+}
+.totp-secondary-btn:active {
+  background: var(--surface-2) !important;
+}
+
+/* TOTP input on login page */
+.totp-input {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Topbar back button clickable area */
+.topbar-back {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  min-width: 44px;
+  color: var(--green);
+  display: flex;
+  align-items: center;
+  transition: transform .12s ease;
+}
+.topbar-back:active {
+  transform: scale(0.9);
+}

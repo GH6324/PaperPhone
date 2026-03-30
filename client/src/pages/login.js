@@ -10,12 +10,140 @@ import { t, getLang, getSupportedLangs, getLangFlag, getLangName, setLang } from
 
 export function renderLogin(root) {
   let isRegister = false;
+  let pending2FA = null; // { login_token }
 
   function build() {
     root.innerHTML = '';
     const screen = document.createElement('div');
     screen.className = 'auth-screen';
 
+    if (pending2FA) {
+      // ── 2FA Verification Screen ─────────────────────────────────────
+      screen.innerHTML = `
+        <div class="auth-logo-wrap" style="background:transparent;box-shadow:0 8px 40px rgba(0,0,0,.12);overflow:hidden;">
+          <div class="totp-shield-icon">
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="url(#shield-grad)">
+              <defs><linearGradient id="shield-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34C759"/><stop offset="100%" stop-color="#30D158"/></linearGradient></defs>
+              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="auth-title">${t('twoFactorTitle')}</div>
+        <div class="auth-tagline">${t('twoFactorSubtitle')}</div>
+
+        <form class="auth-form" id="totp-form" autocomplete="off">
+          <div class="auth-field">
+            <input class="auth-input totp-input" id="inp-totp" type="text"
+              inputmode="numeric" pattern="[0-9]*" maxlength="9"
+              placeholder="${t('totpCodePlaceholder')}" autocomplete="one-time-code"
+              style="text-align:center;font-size:24px;letter-spacing:8px;font-weight:600">
+          </div>
+          <div class="auth-error" id="totp-err"></div>
+          <button class="auth-btn" id="totp-submit" type="submit">
+            ${t('verify')}
+          </button>
+        </form>
+
+        <div class="auth-toggle" id="totp-recovery-link">
+          ${t('lostDevice')}
+          <span>${t('useRecoveryCode')}</span>
+        </div>
+
+        <div class="auth-toggle" id="totp-back-link" style="margin-top:4px">
+          <span>← ${t('backToLogin')}</span>
+        </div>
+      `;
+      root.appendChild(screen);
+
+      // Auto-focus
+      setTimeout(() => document.getElementById('inp-totp')?.focus(), 100);
+
+      // Recovery code mode toggle
+      const totpInput = screen.querySelector('#inp-totp');
+      screen.querySelector('#totp-recovery-link').addEventListener('click', () => {
+        if (totpInput.inputMode === 'numeric') {
+          totpInput.inputMode = 'text';
+          totpInput.maxLength = 9;
+          totpInput.pattern = '';
+          totpInput.placeholder = t('recoveryCodePlaceholder');
+          totpInput.style.letterSpacing = '4px';
+          totpInput.style.fontSize = '18px';
+        } else {
+          totpInput.inputMode = 'numeric';
+          totpInput.maxLength = 9;
+          totpInput.pattern = '[0-9]*';
+          totpInput.placeholder = t('totpCodePlaceholder');
+          totpInput.style.letterSpacing = '8px';
+          totpInput.style.fontSize = '24px';
+        }
+        totpInput.value = '';
+        totpInput.focus();
+      });
+
+      // Back to login
+      screen.querySelector('#totp-back-link').addEventListener('click', () => {
+        pending2FA = null;
+        build();
+      });
+
+      // 2FA form submit
+      screen.querySelector('#totp-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        const errEl = document.getElementById('totp-err');
+        const submitBtn = document.getElementById('totp-submit');
+        errEl.textContent = '';
+
+        const code = document.getElementById('inp-totp').value.trim();
+        if (!code) { errEl.textContent = t('enterCode'); return; }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = t('verifying');
+
+        try {
+          const data = await api.totpVerifyLogin(code, pending2FA.login_token);
+          setToken(data.token);
+          pending2FA = null;
+
+          submitBtn.textContent = t('generatingKeys') || '正在生成密钥...';
+          await window._sodiumPromise;
+
+          const ik  = await generateIdentityKeyPair();
+          const spk = await generateSignedPreKey(ik.privateKey);
+          const opks = await Promise.all(
+            Array.from({ length: 10 }, (_, i) =>
+              generateOneTimePreKey().then(k => ({ key_id: i, opk_pub: k.publicKey, _priv: k.privateKey }))
+            )
+          );
+
+          await setKey('ik', ik);
+          await setKey('spk', spk);
+          for (const opk of opks) await setKey(`opk_${opk.key_id}`, { privateKey: opk._priv });
+
+          const keysPayload = {
+            ik_pub: ik.publicKey, spk_pub: spk.publicKey, spk_sig: spk.signature,
+            kem_pub: ik.publicKey,
+            prekeys: opks.map(({ key_id, opk_pub }) => ({ key_id, opk_pub })),
+          };
+          try { await api.uploadKeys(keysPayload); } catch {
+            await new Promise(r => setTimeout(r, 1500));
+            await api.uploadKeys(keysPayload);
+          }
+
+          state.user = data.user;
+          connect();
+          window.location.reload();
+        } catch (err) {
+          errEl.textContent = err.message || t('opFailed');
+          submitBtn.disabled = false;
+          submitBtn.textContent = t('verify');
+        }
+      });
+
+      return; // done for 2FA screen
+    }
+
+    // ── Normal Login / Register Screen ────────────────────────────────
     screen.innerHTML = `
       <div class="auth-logo-wrap" style="background:transparent;box-shadow:0 8px 40px rgba(0,0,0,.12);overflow:hidden;">
         <img src="/public/icons/icon-192.png?v=3" alt="PaperPhone"
@@ -123,6 +251,14 @@ export function renderLogin(root) {
         } else {
           // Login: authenticate first, then generate + upload fresh keys for this device
           data = await api.login({ username, password });
+
+          // ── Handle 2FA challenge ──
+          if (data.requires_2fa) {
+            pending2FA = { login_token: data.login_token };
+            build();
+            return;
+          }
+
           setToken(data.token);
 
           submitBtn.textContent = t('generatingKeys') || '正在生成密钥...';

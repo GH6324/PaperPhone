@@ -71,6 +71,12 @@ export function renderProfile(root) {
           <span class="settings-label">${t('devices')}</span>
           <span class="settings-chevron">›</span>
         </div>
+        <div class="settings-item" id="totp-2fa-btn">
+          <div class="settings-icon" style="background:#34C759"><svg viewBox="0 0 24 24" width="18" height="18" fill="#fff"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg></div>
+          <span class="settings-label">${t('twoFactorAuth')}</span>
+          <span class="settings-value" id="totp-status">...</span>
+          <span class="settings-chevron">›</span>
+        </div>
       </div>
 
       <div class="card-group" id="g-prefs">
@@ -167,6 +173,17 @@ export function renderProfile(root) {
         appEl.appendChild(page);
       });
     };
+
+    // ── TOTP 2FA ──────────────────────────────────────────────────────
+    const totpStatusEl = root.querySelector('#totp-status');
+    (async () => {
+      try {
+        const { enabled } = await api.totpStatus();
+        totpStatusEl.textContent = enabled ? t('totpEnabled') : t('totpDisabled');
+      } catch { totpStatusEl.textContent = '-'; }
+    })();
+
+    root.querySelector('#totp-2fa-btn').onclick = () => open2FAPage(buildPage);
 
     // Push notification toggle — async check & toggle
     const pushToggleEl = root.querySelector('#push-toggle');
@@ -281,4 +298,226 @@ function openLangPicker(onClose) {
 
 function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/**
+ * Full-page 2FA management
+ */
+async function open2FAPage(onBack) {
+  const appEl = document.getElementById('app');
+  const page = document.createElement('div');
+  page.className = 'page';
+
+  let step = 'loading'; // loading | setup | confirm | recovery | enabled
+
+  async function render() {
+    page.innerHTML = `
+      <div class="topbar">
+        <div class="topbar-back" id="totp-back">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </div>
+        <div class="topbar-title">${t('twoFactorAuth')}</div>
+        <div style="min-width:44px"></div>
+      </div>
+      <div id="totp-content" style="padding:16px;padding-top:calc(var(--topbar-h) + 16px);max-width:420px;margin:0 auto"></div>
+    `;
+
+    appEl.innerHTML = '';
+    appEl.appendChild(page);
+
+    page.querySelector('#totp-back').onclick = () => {
+      const pg = document.createElement('div');
+      pg.className = 'page';
+      renderProfile(pg);
+      appEl.innerHTML = '';
+      appEl.appendChild(pg);
+    };
+
+    const content = page.querySelector('#totp-content');
+
+    if (step === 'loading') {
+      content.innerHTML = `<div style="text-align:center;padding:48px 0;color:var(--subtext)">${t('loading') || '...'}</div>`;
+      try {
+        const { enabled } = await api.totpStatus();
+        step = enabled ? 'enabled' : 'setup';
+        render();
+      } catch {
+        content.innerHTML = `<div style="text-align:center;padding:48px 0;color:var(--red)">${t('opFailed')}</div>`;
+      }
+      return;
+    }
+
+    if (step === 'enabled') {
+      content.innerHTML = `
+        <div class="totp-status-card">
+          <div class="totp-status-icon totp-enabled">
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
+              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+            </svg>
+          </div>
+          <div class="totp-status-text">${t('totpEnabledDesc')}</div>
+        </div>
+
+        <div class="card-group" style="margin-top:24px">
+          <div class="settings-item" id="totp-disable-btn" style="justify-content:center">
+            <span style="color:var(--red);font-size:16px;font-weight:500">${t('totpDisable')}</span>
+          </div>
+        </div>
+      `;
+
+      content.querySelector('#totp-disable-btn').onclick = async () => {
+        const code = prompt(t('totpDisablePrompt'));
+        if (!code) return;
+        try {
+          await api.totpDisable(code.trim());
+          showToast(t('totpDisabledSuccess'));
+          step = 'setup';
+          render();
+        } catch (err) {
+          showToast(err.message || t('opFailed'));
+        }
+      };
+      return;
+    }
+
+    if (step === 'setup') {
+      content.innerHTML = `
+        <div class="totp-setup-intro">
+          <div class="totp-status-icon" style="color:var(--subtext)">
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
+              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
+            </svg>
+          </div>
+          <h3 style="margin:12px 0 8px;color:var(--text)">${t('totpSetupTitle')}</h3>
+          <p style="color:var(--subtext);font-size:14px;line-height:1.5">${t('totpSetupDesc')}</p>
+        </div>
+
+        <button class="auth-btn" id="totp-start-btn" style="margin-top:20px;width:100%">${t('totpStartSetup')}</button>
+      `;
+
+      content.querySelector('#totp-start-btn').onclick = async () => {
+        const btn = content.querySelector('#totp-start-btn');
+        btn.disabled = true;
+        btn.textContent = '...';
+        try {
+          const setupData = await api.totpSetup();
+          step = 'confirm';
+          renderConfirm(setupData);
+        } catch (err) {
+          showToast(err.message || t('opFailed'));
+          btn.disabled = false;
+          btn.textContent = t('totpStartSetup');
+        }
+      };
+      return;
+    }
+  }
+
+  function renderConfirm(setupData) {
+    const content = page.querySelector('#totp-content');
+    content.innerHTML = `
+      <div class="totp-qr-section">
+        <p style="color:var(--subtext);font-size:14px;margin-bottom:16px;text-align:center">${t('totpScanQR')}</p>
+        <div class="totp-qr-wrap">
+          <img src="${setupData.qrDataUrl}" alt="QR Code" class="totp-qr-image">
+        </div>
+        <div class="totp-secret-wrap">
+          <span class="totp-secret-label">${t('totpManualKey')}</span>
+          <code class="totp-secret-code" id="totp-secret-text">${setupData.secret}</code>
+          <button class="totp-copy-btn" id="totp-copy-secret" title="Copy">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <form id="totp-confirm-form" autocomplete="off" style="margin-top:20px">
+        <div class="auth-field">
+          <input class="auth-input totp-input" id="inp-totp-confirm" type="text"
+            inputmode="numeric" pattern="[0-9]*" maxlength="6"
+            placeholder="${t('totpCodePlaceholder')}" autocomplete="one-time-code"
+            style="text-align:center;font-size:24px;letter-spacing:8px;font-weight:600">
+        </div>
+        <div class="auth-error" id="totp-confirm-err"></div>
+        <button class="auth-btn" id="totp-confirm-btn" type="submit" style="width:100%">${t('totpConfirmSetup')}</button>
+      </form>
+    `;
+
+    // Copy secret
+    content.querySelector('#totp-copy-secret').onclick = () => {
+      navigator.clipboard?.writeText(setupData.secret).then(() => showToast(t('copied') || 'Copied'));
+    };
+
+    // Auto-focus
+    setTimeout(() => content.querySelector('#inp-totp-confirm')?.focus(), 100);
+
+    // Confirm form
+    content.querySelector('#totp-confirm-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const errEl = content.querySelector('#totp-confirm-err');
+      const btn = content.querySelector('#totp-confirm-btn');
+      const code = content.querySelector('#inp-totp-confirm').value.trim();
+      errEl.textContent = '';
+      if (!code) { errEl.textContent = t('enterCode'); return; }
+
+      btn.disabled = true;
+      btn.textContent = t('verifying');
+
+      try {
+        const result = await api.totpVerifySetup(code);
+        renderRecoveryCodes(result.recoveryCodes);
+      } catch (err) {
+        errEl.textContent = err.message || t('opFailed');
+        btn.disabled = false;
+        btn.textContent = t('totpConfirmSetup');
+      }
+    };
+  }
+
+  function renderRecoveryCodes(codes) {
+    const content = page.querySelector('#totp-content');
+    content.innerHTML = `
+      <div class="totp-recovery-section">
+        <div class="totp-status-icon totp-enabled" style="margin-bottom:12px">
+          <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
+            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+          </svg>
+        </div>
+        <h3 style="color:var(--text);margin:0 0 8px;text-align:center">${t('totpSetupComplete')}</h3>
+        <p style="color:var(--subtext);font-size:14px;line-height:1.5;text-align:center;margin-bottom:16px">${t('totpRecoveryDesc')}</p>
+
+        <div class="totp-recovery-grid">
+          ${codes.map((c, i) => `<div class="totp-recovery-code"><span class="totp-recovery-num">${i + 1}</span>${c}</div>`).join('')}
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:16px">
+          <button class="auth-btn totp-secondary-btn" id="totp-copy-codes" style="flex:1">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="margin-right:4px"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+            ${t('copyRecoveryCodes')}
+          </button>
+        </div>
+
+        <button class="auth-btn" id="totp-done-btn" style="width:100%;margin-top:12px">${t('totpDone')}</button>
+
+        <p class="totp-recovery-warning">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="margin-right:4px;vertical-align:-2px"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+          ${t('totpRecoveryWarning')}
+        </p>
+      </div>
+    `;
+
+    content.querySelector('#totp-copy-codes').onclick = () => {
+      const text = codes.join('\n');
+      navigator.clipboard?.writeText(text).then(() => showToast(t('copied') || 'Copied'));
+    };
+
+    content.querySelector('#totp-done-btn').onclick = () => {
+      const pg = document.createElement('div');
+      pg.className = 'page';
+      renderProfile(pg);
+      appEl.innerHTML = '';
+      appEl.appendChild(pg);
+    };
+  }
+
+  render();
 }

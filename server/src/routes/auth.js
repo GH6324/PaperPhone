@@ -78,6 +78,24 @@ router.post('/login', async (req, res, next) => {
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
 
+    // Check if 2FA is enabled
+    const [totpRows] = await db.query(
+      'SELECT enabled FROM user_totp WHERE user_id = ? AND enabled = 1',
+      [user.id]
+    );
+
+    if (totpRows.length > 0) {
+      // 2FA enabled — issue a short-lived pending token
+      const jwt = require('jsonwebtoken');
+      const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
+      const loginToken = jwt.sign(
+        { id: user.id, username: user.username, type: '2fa_pending' },
+        JWT_SECRET,
+        { expiresIn: '5m' }
+      );
+      return res.json({ requires_2fa: true, login_token: loginToken });
+    }
+
     delete user.password;
     const { token } = await createSession(user.id, user.username, req);
     res.json({ token, user });

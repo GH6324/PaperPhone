@@ -285,3 +285,13 @@ SET @m_sql = IF(@m_vis = 0,
 PREPARE m_stmt FROM @m_sql;
 EXECUTE m_stmt;
 DEALLOCATE PREPARE m_stmt;
+
+-- ── TOTP Two-Factor Authentication ───────────────────────────────────────
+CREATE TABLE IF NOT EXISTS user_totp (
+  user_id         VARCHAR(36)   PRIMARY KEY,
+  totp_secret     VARCHAR(64)   NOT NULL,
+  recovery_codes  TEXT          DEFAULT NULL,
+  enabled         TINYINT(1)    NOT NULL DEFAULT 0,
+  created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

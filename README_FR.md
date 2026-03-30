@@ -27,6 +27,7 @@ Une application de messagerie instantanée chiffrée de bout en bout, style WeCh
 | 🌐 Moments | Fil social : texte + 9 photos, likes (avatars), commentaires, visibilité par tags |
 | 🏷️ Tags d'amis | Plusieurs tags par ami (12 couleurs), filtrage des contacts |
 | 🗂️ Stockage R2 | Cloudflare R2 pour images/audio — CDN optionnel |
+| 🔑 Auth à deux facteurs (2FA) | TOTP compatible Google Authenticator, 8 codes de récupération, vérification obligatoire à la connexion |
 | 🏗️ Auto-hébergeable | Docker Compose en une commande |
 
 ---

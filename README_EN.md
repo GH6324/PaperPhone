@@ -26,6 +26,7 @@ A WeChat-style end-to-end encrypted instant messaging app with stateless ECDH + 
 | 🌐 Moments | WeChat-style social feed: text + up to 9 photos, likes (friend avatars), comments, tag-based visibility control |
 | 🏷️ Friend Tags | Assign multiple tags to friends (12-color preset palette), filter contacts by tag |
 | 🗂️ R2 Object Storage | Cloudflare R2 for image/voice files — optional public CDN URL |
+| 🔑 Two-Factor Auth (2FA) | Google Authenticator–compatible TOTP, 8 one-time recovery codes, enforced at login |
 | 🏗️ Self-Hostable | Docker Compose one-command deployment; Node.js + Redis multi-node ready |
 
 ---
@@ -272,7 +273,8 @@ paperphone/
 │       │   ├── moments.js      # Moments feed (posts / likes / comments)
 │       │   ├── calls.js        # TURN credential issuance
 │       │   ├── push.js         # Push subscription mgmt (Web Push + OneSignal)
-│       │   └── stickers.js     # Telegram sticker pack proxy (cached)
+│       │   ├── stickers.js     # Telegram sticker pack proxy (cached)
+│       │   └── totp.js         # TOTP two-factor auth (setup / verify / recovery)
 │       ├── services/
 │       │   ├── push.js         # Web Push VAPID service
 │       │   └── onesignal.js    # OneSignal REST API service
@@ -311,7 +313,7 @@ paperphone/
 
 ## Database Schema
 
-11 tables, auto-created on first server startup (`CREATE TABLE IF NOT EXISTS`):
+12 tables, auto-created on first server startup (`CREATE TABLE IF NOT EXISTS`):
 
 | Table | Purpose |
 |-------|---------|
@@ -326,6 +328,7 @@ paperphone/
 | `moment_comments` | Comments (≤ 512 chars each) |
 | `push_subscriptions` | Web Push subscriptions (VAPID) |
 | `onesignal_players` | OneSignal device registrations (Median.co) |
+| `user_totp` | TOTP two-factor auth secrets & recovery codes |
 
 ---
 
