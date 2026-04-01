@@ -24,7 +24,7 @@ Una aplicación de mensajería instantánea cifrada de extremo a extremo estilo 
 | 🌐 Multilingüe | ZH/EN/JA/KO/FR/DE/RU/ES — detección automática + selección manual |
 | 📱 iOS sin certificado empresarial | PWA vía Safari "Añadir a inicio", sin firma de Apple |
 | 💬 Mensajería rica | Texto, imágenes, mensajes de voz, 200+ emojis (8 categorías), packs de stickers Telegram, confirmaciones de lectura |
-| 🌐 Momentos | Feed social: texto + hasta 9 fotos, likes (avatares de amigos), comentarios, visibilidad por etiquetas |
+| 🌐 Momentos | Feed social: texto + hasta 9 fotos o 1 vídeo (≤ 10 min), likes (avatares de amigos), comentarios, visibilidad por etiquetas |
 | 🏷️ Etiquetas de amigos | Múltiples etiquetas por amigo (paleta de 12 colores), filtrar contactos por etiqueta |
 | 🗂️ Almacenamiento R2 | Cloudflare R2 para imágenes/audio — URL CDN opcional |
 | 🔑 Auth de dos factores (2FA) | TOTP compatible con Google Authenticator, 8 códigos de recuperación, verificación obligatoria al iniciar sesión |
@@ -140,7 +140,7 @@ El servidor ve: ✅ texto cifrado + metadatos de enrutamiento  ❌ texto plano /
 
 ## Esquema de base de datos
 
-12 tablas, creadas automáticamente en el primer inicio:
+13 tablas, creadas automáticamente en el primer inicio:
 
 | Tabla | Propósito |
 |-------|-----------|
@@ -150,6 +150,7 @@ El servidor ve: ✅ texto cifrado + metadatos de enrutamiento  ❌ texto plano /
 | `groups` / `group_members` | Grupos + miembros |
 | `messages` | Mensajes cifrados |
 | `moments` / `moment_images` | Publicaciones + imágenes |
+| `moment_videos` | Videos de publicaciones (miniatura + duración, 1 por publicación, ≤ 10 min) |
 | `moment_likes` / `moment_comments` | Likes + comentarios |
 | `push_subscriptions` | Web Push (VAPID) |
 | `onesignal_players` | Dispositivos OneSignal |

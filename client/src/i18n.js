@@ -140,6 +140,9 @@ const TRANSLATIONS = {
     momentPlaceholder: '这一刻，想和大家分享什么...',
     deleteConfirm: '确认删除？',
     sendMoment: '发布中...',
+    addVideo: '添加视频',
+    videoTooLong: '视频最长 10 分钟',
+    videoAndImageExclusive: '视频和图片不能同时发布',
     // Push Notifications
     pushNotifications: '消息通知',
     pushEnabled: '已开启',
@@ -389,6 +392,9 @@ const TRANSLATIONS = {
     momentPlaceholder: "What's on your mind?",
     deleteConfirm: 'Delete this post?',
     sendMoment: 'Posting...',
+    addVideo: 'Add Video',
+    videoTooLong: 'Video must be under 10 minutes',
+    videoAndImageExclusive: 'Cannot post video and images together',
     // Push Notifications
     pushNotifications: 'Notifications',
     pushEnabled: 'On',
@@ -638,6 +644,9 @@ const TRANSLATIONS = {
     momentPlaceholder: '今どんな気持ち？',
     deleteConfirm: 'この投稿を削除しますか？',
     sendMoment: '投稿中...',
+    addVideo: '動画を追加',
+    videoTooLong: '動画は10分以内にしてください',
+    videoAndImageExclusive: '動画と写真は同時に投稿できません',
     // Push Notifications
     pushNotifications: '通知',
     pushEnabled: 'オン',
@@ -887,6 +896,9 @@ const TRANSLATIONS = {
     momentPlaceholder: '무슨 생각을 하고 있나요?',
     deleteConfirm: '이 게시물을 삭제하시겠어요?',
     sendMoment: '게시 중...',
+    addVideo: '동영상 추가',
+    videoTooLong: '동영상은 10분 이내여야 합니다',
+    videoAndImageExclusive: '동영상과 사진을 동시에 게시할 수 없습니다',
     // Push Notifications
     pushNotifications: '알림',
     pushEnabled: '켜짐',
@@ -1136,6 +1148,9 @@ const TRANSLATIONS = {
     momentPlaceholder: 'Quoi de neuf ?',
     deleteConfirm: 'Supprimer cette publication ?',
     sendMoment: 'Publication...',
+    addVideo: 'Ajouter une vidéo',
+    videoTooLong: 'La vidéo doit durer moins de 10 minutes',
+    videoAndImageExclusive: 'Impossible de publier une vidéo et des photos en même temps',
     // Push Notifications
     pushNotifications: 'Notifications',
     pushEnabled: 'Activées',
@@ -1384,6 +1399,9 @@ const TRANSLATIONS = {
     momentPlaceholder: 'Was gibt\'s Neues?',
     deleteConfirm: 'Diesen Beitrag löschen?',
     sendMoment: 'Wird veröffentlicht...',
+    addVideo: 'Video hinzufügen',
+    videoTooLong: 'Video muss unter 10 Minuten sein',
+    videoAndImageExclusive: 'Video und Fotos können nicht gleichzeitig gepostet werden',
     // Push
     pushNotifications: 'Benachrichtigungen',
     pushEnabled: 'Aktiviert',
@@ -1632,6 +1650,9 @@ const TRANSLATIONS = {
     momentPlaceholder: 'Что нового?',
     deleteConfirm: 'Удалить этот пост?',
     sendMoment: 'Публикация...',
+    addVideo: 'Добавить видео',
+    videoTooLong: 'Видео должно быть не более 10 минут',
+    videoAndImageExclusive: 'Нельзя публиковать видео и фото одновременно',
     // Push
     pushNotifications: 'Уведомления',
     pushEnabled: 'Включены',
@@ -1880,6 +1901,9 @@ const TRANSLATIONS = {
     momentPlaceholder: '¿Qué hay de nuevo?',
     deleteConfirm: '¿Eliminar esta publicación?',
     sendMoment: 'Publicando...',
+    addVideo: 'Añadir vídeo',
+    videoTooLong: 'El vídeo debe durar menos de 10 minutos',
+    videoAndImageExclusive: 'No se puede publicar vídeo y fotos al mismo tiempo',
     // Push
     pushNotifications: 'Notificaciones',
     pushEnabled: 'Activadas',

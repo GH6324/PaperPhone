@@ -1,6 +1,6 @@
 /**
  * Moments (朋友圈) Page
- * WeChat-style social feed: text + up to 9 images, likes with avatars, comments, visibility control
+ * WeChat-style social feed: text + up to 9 images OR 1 video (≤10min), likes with avatars, comments, visibility control
  */
 import { api } from '../api.js';
 import { state, showToast, avatarEl, formatTime } from '../app.js';
@@ -123,8 +123,40 @@ export function renderMoments(root) {
       card.appendChild(txt);
     }
 
-    // Images grid
-    if (m.images && m.images.length > 0) {
+    // Video
+    if (m.video && m.video.url) {
+      const wrap = document.createElement('div');
+      wrap.className = 'moment-video-wrap';
+
+      const thumb = document.createElement('img');
+      thumb.className = 'moment-video-thumb';
+      thumb.loading = 'lazy';
+      if (m.video.thumbnail) {
+        thumb.src = m.video.thumbnail;
+      } else {
+        // No thumbnail — use a dark placeholder
+        thumb.style.background = '#1a1a2e';
+      }
+      wrap.appendChild(thumb);
+
+      const playBtn = document.createElement('div');
+      playBtn.className = 'moment-video-play';
+      playBtn.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg>`;
+      wrap.appendChild(playBtn);
+
+      if (m.video.duration) {
+        const dur = document.createElement('span');
+        dur.className = 'moment-video-duration';
+        dur.textContent = fmtDuration(m.video.duration);
+        wrap.appendChild(dur);
+      }
+
+      wrap.onclick = () => openVideoPlayer(m.video.url);
+      card.appendChild(wrap);
+    }
+
+    // Images grid (only shown if no video)
+    if (!m.video && m.images && m.images.length > 0) {
       const grid = document.createElement('div');
       grid.className = `moment-images count-${m.images.length}`;
       m.images.forEach((url, i) => {
@@ -230,6 +262,41 @@ export function renderMoments(root) {
     };
 
     return card;
+  }
+
+  // ── Format duration ─────────────────────────────────────────────────
+  function fmtDuration(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  }
+
+  // ── Video Player ──────────────────────────────────────────────────
+  function openVideoPlayer(url) {
+    const overlay = document.createElement('div');
+    overlay.className = 'video-player-overlay';
+
+    const close = document.createElement('button');
+    close.className = 'video-player-close';
+    close.innerHTML = '<i class="fi fi-rr-cross"></i>';
+    close.onclick = () => { video.pause(); overlay.remove(); };
+
+    const video = document.createElement('video');
+    video.className = 'video-player-video';
+    video.src = url;
+    video.controls = true;
+    video.autoplay = true;
+    video.playsInline = true;
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', '');
+
+    overlay.appendChild(close);
+    overlay.appendChild(video);
+    document.body.appendChild(overlay);
+
+    overlay.onclick = (e) => {
+      if (e.target === overlay) { video.pause(); overlay.remove(); }
+    };
   }
 
   function buildLikeAvatarsRow(likedUsers) {
@@ -409,6 +476,12 @@ export function renderMoments(root) {
     imagesDiv.className = 'compose-images';
     body.appendChild(imagesDiv);
 
+    // Video preview area
+    const videoPreviewDiv = document.createElement('div');
+    videoPreviewDiv.className = 'compose-video-preview';
+    videoPreviewDiv.style.display = 'none';
+    body.appendChild(videoPreviewDiv);
+
     userRow.appendChild(body);
 
     // ── Bottom toolbar ───────────────────────────────────────────
@@ -427,6 +500,13 @@ export function renderMoments(root) {
       <span class="compose-photo-count" id="compose-photo-count" style="display:none">0/9</span>
     `;
 
+    // Video button
+    const videoBtn = document.createElement('button');
+    videoBtn.className = 'compose-video-btn';
+    videoBtn.id = 'compose-add-video';
+    videoBtn.innerHTML = `<i class="fi fi-rr-film"></i>`;
+    videoBtn.title = t('addVideo') || '添加视频';
+
     // Visibility button
     const visBtn = document.createElement('button');
     visBtn.className = 'compose-vis-btn';
@@ -443,10 +523,18 @@ export function renderMoments(root) {
     fileInput.multiple = true;
     fileInput.style.display = 'none';
 
+    const videoInput = document.createElement('input');
+    videoInput.type = 'file';
+    videoInput.id = 'compose-video-input';
+    videoInput.accept = 'video/*';
+    videoInput.style.display = 'none';
+
     toolbar.appendChild(charCount);
     toolbar.appendChild(visBtn);
     toolbar.appendChild(photoBtn);
+    toolbar.appendChild(videoBtn);
     toolbar.appendChild(fileInput);
+    toolbar.appendChild(videoInput);
 
     sheet.appendChild(hdr);
     sheet.appendChild(userRow);
@@ -461,6 +549,7 @@ export function renderMoments(root) {
     const photoCount = modal.querySelector('#compose-photo-count');
     const visLabel = modal.querySelector('#compose-vis-label');
     let uploadedUrls = [];
+    let uploadedVideo = null; // { url, thumbnail, duration }
 
     // ── Visibility picker ────────────────────────────────────────
     visBtn.onclick = () => {
@@ -492,8 +581,26 @@ export function renderMoments(root) {
     };
 
     function updatePublish() {
-      const ok = textarea.value.trim().length > 0 || uploadedUrls.length > 0;
+      const ok = textarea.value.trim().length > 0 || uploadedUrls.length > 0 || uploadedVideo !== null;
       submitBtn.disabled = !ok;
+    }
+
+    // ── Mutual exclusion helpers ─────────────────────────────────
+    function syncMediaButtons() {
+      if (uploadedVideo) {
+        // Video selected — hide photo button
+        photoBtn.style.display = 'none';
+        videoBtn.classList.add('compose-video-btn-active');
+      } else if (uploadedUrls.length > 0) {
+        // Images selected — hide video button
+        videoBtn.style.display = 'none';
+        photoBtn.style.display = '';
+      } else {
+        // Nothing — show both
+        photoBtn.style.display = '';
+        videoBtn.style.display = '';
+        videoBtn.classList.remove('compose-video-btn-active');
+      }
     }
 
     // ── Close ────────────────────────────────────────────────────
@@ -508,7 +615,7 @@ export function renderMoments(root) {
     photoBtn.onclick = (e) => {
       // Don't trigger if clicking the vis btn
       if (e.target.closest('#compose-vis-btn')) return;
-      if (uploadedUrls.length >= 9) { showToast('最多选择 9 张图片'); return; }
+      if (uploadedUrls.length >= 9) { showToast(t('maxImages') || '最多选择 9 张图片'); return; }
       fileInput.click();
     };
 
@@ -536,6 +643,7 @@ export function renderMoments(root) {
             thumb.remove();
             updatePhotoCount();
             updatePublish();
+            syncMediaButtons();
           };
           thumb.append(img, rm);
         } catch {
@@ -544,6 +652,7 @@ export function renderMoments(root) {
         }
         updatePhotoCount();
         updatePublish();
+        syncMediaButtons();
       }
       fileInput.value = '';
     };
@@ -559,16 +668,175 @@ export function renderMoments(root) {
       }
     }
 
+    // ── Video upload ─────────────────────────────────────────────
+    videoBtn.onclick = () => {
+      if (uploadedVideo) return; // Already have a video
+      videoInput.click();
+    };
+
+    videoInput.onchange = async () => {
+      const file = videoInput.files?.[0];
+      if (!file) return;
+
+      // Validate duration client-side
+      const duration = await getVideoDuration(file);
+      if (duration > 600) {
+        showToast(t('videoTooLong') || '视频最长 10 分钟');
+        videoInput.value = '';
+        return;
+      }
+
+      // Show loading state
+      videoPreviewDiv.style.display = '';
+      videoPreviewDiv.innerHTML = `<div class="compose-video-loading">
+        <div class="compose-thumb-spinner"></div>
+        <span>${t('uploading') || '上传中...'}</span>
+      </div>`;
+      syncMediaButtons();
+
+      try {
+        // Generate thumbnail from video
+        const thumbnailBlob = await generateVideoThumbnail(file);
+
+        // Upload video file
+        const videoResult = await api.upload(file);
+
+        // Upload thumbnail
+        let thumbnailUrl = null;
+        if (thumbnailBlob) {
+          const thumbFile = new File([thumbnailBlob], 'thumb.jpg', { type: 'image/jpeg' });
+          const thumbResult = await api.upload(thumbFile);
+          thumbnailUrl = thumbResult.url;
+        }
+
+        uploadedVideo = {
+          url: videoResult.url,
+          thumbnail: thumbnailUrl,
+          duration: Math.round(duration),
+        };
+
+        // Show preview
+        renderVideoPreview(thumbnailUrl, duration);
+        updatePublish();
+        syncMediaButtons();
+      } catch {
+        videoPreviewDiv.style.display = 'none';
+        videoPreviewDiv.innerHTML = '';
+        showToast(t('uploadFailed') || '上传失败');
+        syncMediaButtons();
+      }
+      videoInput.value = '';
+    };
+
+    function renderVideoPreview(thumbUrl, duration) {
+      videoPreviewDiv.innerHTML = '';
+      videoPreviewDiv.style.display = '';
+      videoPreviewDiv.className = 'compose-video-preview';
+
+      const wrap = document.createElement('div');
+      wrap.className = 'compose-video-thumb-wrap';
+
+      if (thumbUrl) {
+        const img = document.createElement('img');
+        img.src = thumbUrl;
+        img.className = 'compose-video-thumb-img';
+        wrap.appendChild(img);
+      } else {
+        wrap.style.background = '#1a1a2e';
+      }
+
+      const playIcon = document.createElement('div');
+      playIcon.className = 'compose-video-play-icon';
+      playIcon.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg>`;
+      wrap.appendChild(playIcon);
+
+      const dur = document.createElement('span');
+      dur.className = 'compose-video-dur';
+      dur.textContent = fmtDuration(duration);
+      wrap.appendChild(dur);
+
+      const rm = document.createElement('button');
+      rm.className = 'compose-thumb-rm';
+      rm.innerHTML = '<i class="fi fi-rr-cross"></i>';
+      rm.onclick = (e) => {
+        e.stopPropagation();
+        uploadedVideo = null;
+        videoPreviewDiv.style.display = 'none';
+        videoPreviewDiv.innerHTML = '';
+        updatePublish();
+        syncMediaButtons();
+      };
+      wrap.appendChild(rm);
+
+      videoPreviewDiv.appendChild(wrap);
+    }
+
+    // ── Video helpers ────────────────────────────────────────────
+    function getVideoDuration(file) {
+      return new Promise((resolve) => {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.onloadedmetadata = () => {
+          URL.revokeObjectURL(video.src);
+          resolve(video.duration || 0);
+        };
+        video.onerror = () => {
+          URL.revokeObjectURL(video.src);
+          resolve(0);
+        };
+        video.src = URL.createObjectURL(file);
+      });
+    }
+
+    function generateVideoThumbnail(file) {
+      return new Promise((resolve) => {
+        const video = document.createElement('video');
+        video.preload = 'auto';
+        video.muted = true;
+        video.playsInline = true;
+
+        video.onloadeddata = () => {
+          // Seek to 1 second (or 0 if shorter)
+          video.currentTime = Math.min(1, video.duration * 0.1);
+        };
+
+        video.onseeked = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.min(video.videoWidth, 480);
+            canvas.height = Math.round(canvas.width * (video.videoHeight / video.videoWidth));
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob((blob) => {
+              URL.revokeObjectURL(video.src);
+              resolve(blob);
+            }, 'image/jpeg', 0.8);
+          } catch {
+            URL.revokeObjectURL(video.src);
+            resolve(null);
+          }
+        };
+
+        video.onerror = () => {
+          URL.revokeObjectURL(video.src);
+          resolve(null);
+        };
+
+        video.src = URL.createObjectURL(file);
+      });
+    }
+
     // ── Publish ──────────────────────────────────────────────────
     submitBtn.onclick = async () => {
       const text = textarea.value.trim();
-      if (!text && uploadedUrls.length === 0) { showToast('请输入内容或添加图片'); return; }
+      if (!text && uploadedUrls.length === 0 && !uploadedVideo) { showToast(t('noContent') || '请输入内容或添加图片/视频'); return; }
       submitBtn.disabled = true;
       submitBtn.textContent = t('sendMoment') || '发布中...';
       try {
         await api.createMoment({
           text,
           images: uploadedUrls,
+          video: uploadedVideo,
           ...visSettings,
         });
         dismiss();

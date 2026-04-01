@@ -1463,6 +1463,155 @@ html, body {
 }
 .lightbox-close:hover { background:rgba(255,255,255,.22); }
 
+/* ── Moment Video ─────────────────────────────────────────── */
+.moment-video-wrap {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  max-width: 320px;
+  aspect-ratio: 16/9;
+  background: #0d0f1a;
+}
+.moment-video-thumb {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity .2s ease, transform .15s ease;
+}
+.moment-video-wrap:hover .moment-video-thumb { opacity: .88; }
+.moment-video-wrap:active .moment-video-thumb { transform: scale(0.97); }
+.moment-video-play {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: rgba(0,0,0,.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1.5px solid rgba(255,255,255,.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 3px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.3);
+  transition: transform .15s cubic-bezier(.34,1.56,.64,1), background .15s ease;
+}
+.moment-video-wrap:hover .moment-video-play { transform: translate(-50%, -50%) scale(1.08); background: rgba(0,0,0,.55); }
+.moment-video-wrap:active .moment-video-play { transform: translate(-50%, -50%) scale(0.95); }
+.moment-video-duration {
+  position: absolute;
+  bottom: 8px; right: 8px;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  letter-spacing: 0.3px;
+  line-height: 1.3;
+}
+
+/* ── Video Player Overlay ─────────────────────────────────── */
+.video-player-overlay {
+  position: fixed; inset: 0;
+  z-index: 9500;
+  background: rgba(0,0,0,.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn .25s ease;
+}
+.video-player-video {
+  max-width: 94vw;
+  max-height: 88vh;
+  border-radius: 8px;
+  outline: none;
+  box-shadow: 0 8px 40px rgba(0,0,0,.5);
+}
+.video-player-close {
+  position: absolute;
+  top: max(20px, calc(var(--safe-top) + 10px));
+  right: 20px;
+  color: rgba(255,255,255,.9);
+  font-size: 18px;
+  cursor: pointer;
+  width: 40px; height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 50%;
+  border: 0.5px solid rgba(255,255,255,.15);
+  z-index: 1;
+  transition: background .15s ease;
+}
+.video-player-close:hover { background: rgba(255,255,255,.22); }
+.video-player-close .fi { font-size: 16px; color: #fff; }
+
+/* ── Compose Video Button ─────────────────────────────────── */
+.compose-video-btn {
+  position: relative; background: none; border: none; padding: 8px;
+  color: var(--text); cursor: pointer; border-radius: var(--radius-xs);
+  display: flex; align-items: center; justify-content: center;
+  transition: color .15s ease, background .15s ease;
+}
+.compose-video-btn:hover, .compose-video-btn-active { color: var(--green); background: var(--surface-2); }
+.compose-video-btn .fi { font-size: 20px; vertical-align: middle; }
+
+/* ── Compose Video Preview ────────────────────────────────── */
+.compose-video-preview { padding: 4px 0 10px; }
+.compose-video-loading {
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px; color: var(--text-muted);
+  font-size: 14px;
+}
+.compose-video-thumb-wrap {
+  position: relative;
+  width: 180px; aspect-ratio: 16/9;
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  background: #0d0f1a;
+}
+.compose-video-thumb-img {
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+}
+.compose-video-play-icon {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: rgba(0,0,0,.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 2px;
+  border: 1px solid rgba(255,255,255,.15);
+}
+.compose-video-dur {
+  position: absolute;
+  bottom: 6px; right: 6px;
+  background: rgba(0,0,0,.6);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+
 /* ── Profile Page — Glass ─────────────────────────────────── */
 .profile-hero {
   padding: 24px 16px 20px;

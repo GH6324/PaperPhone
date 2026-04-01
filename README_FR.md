@@ -24,7 +24,7 @@ Une application de messagerie instantanée chiffrée de bout en bout, style WeCh
 | 🌐 Multilingue | 中/EN/日/한/FR/DE/RU/ES — détection auto + sélection manuelle |
 | 📱 iOS PWA | Safari « Ajouter à l'écran d'accueil », sans certificat Apple |
 | 💬 Messagerie riche | Texte, images, audio, 200+ émojis (8 catégories), packs de stickers Telegram, accusés de réception |
-| 🌐 Moments | Fil social : texte + 9 photos, likes (avatars), commentaires, visibilité par tags |
+| 🌐 Moments | Fil social : texte + 9 photos ou 1 vidéo (≤ 10 min), likes (avatars), commentaires, visibilité par tags |
 | 🏷️ Tags d'amis | Plusieurs tags par ami (12 couleurs), filtrage des contacts |
 | 🗂️ Stockage R2 | Cloudflare R2 pour images/audio — CDN optionnel |
 | 🔑 Auth à deux facteurs (2FA) | TOTP compatible Google Authenticator, 8 codes de récupération, vérification obligatoire à la connexion |

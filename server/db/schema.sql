@@ -180,6 +180,17 @@ CREATE TABLE IF NOT EXISTS moment_images (
   FOREIGN KEY (moment_id) REFERENCES moments(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ── Moment Videos ─────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS moment_videos (
+  id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  moment_id   BIGINT UNSIGNED NOT NULL,
+  url         TEXT            NOT NULL,
+  thumbnail   TEXT            DEFAULT NULL,
+  duration    SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  INDEX idx_moment_id (moment_id),
+  FOREIGN KEY (moment_id) REFERENCES moments(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- ── Moment Likes ──────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS moment_likes (
   id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

@@ -23,7 +23,7 @@ A WeChat-style end-to-end encrypted instant messaging app with stateless ECDH + 
 | 🌐 Multi-Language | Chinese, English, Japanese, Korean, French, German, Russian, Spanish — auto-detect + manual switch |
 | 📱 iOS — No Enterprise Cert | PWA via Safari "Add to Home Screen", works permanently without Apple signing |
 | 💬 Rich Messaging | Text, images, voice messages, 200+ emoji panel (8 categories), Telegram sticker packs, delivery receipts, typing indicators |
-| 🌐 Moments | WeChat-style social feed: text + up to 9 photos, likes (friend avatars), comments, tag-based visibility control |
+| 🌐 Moments | WeChat-style social feed: text + up to 9 photos or 1 video (≤ 10 min), likes (friend avatars), comments, tag-based visibility control |
 | 🏷️ Friend Tags | Assign multiple tags to friends (12-color preset palette), filter contacts by tag |
 | 🗂️ R2 Object Storage | Cloudflare R2 for image/voice files — optional public CDN URL |
 | 🔑 Two-Factor Auth (2FA) | Google Authenticator–compatible TOTP, 8 one-time recovery codes, enforced at login |
@@ -313,7 +313,7 @@ paperphone/
 
 ## Database Schema
 
-12 tables, auto-created on first server startup (`CREATE TABLE IF NOT EXISTS`):
+13 tables, auto-created on first server startup (`CREATE TABLE IF NOT EXISTS`):
 
 | Table | Purpose |
 |-------|---------|
@@ -324,6 +324,7 @@ paperphone/
 | `messages` | Encrypted payloads (offline buffer, deletable after delivery) |
 | `moments` | Social posts (text ≤ 1024 chars) |
 | `moment_images` | Post images (up to 9 per post) |
+| `moment_videos` | Post videos (thumbnail + duration, 1 per post, ≤ 10 min) |
 | `moment_likes` | Likes (unique per user per post) |
 | `moment_comments` | Comments (≤ 512 chars each) |
 | `push_subscriptions` | Web Push subscriptions (VAPID) |

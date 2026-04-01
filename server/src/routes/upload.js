@@ -17,7 +17,7 @@ router.use(authMiddleware);
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+  limits: { fileSize: 200 * 1024 * 1024 }, // 200MB
   fileFilter: (req, file, cb) => {
     const allowed = ['image/', 'audio/', 'video/', 'application/'];
     const ok = allowed.some(t => file.mimetype.startsWith(t));

@@ -25,18 +25,25 @@ spec:
 
     ## Features
     - 📹 **Video & Voice Calls** — WebRTC P2P (1:1) + Mesh (group up to 6)
+    - 👥 **Group Chat** — up to 2000 members, plain-text messaging, Do Not Disturb mode, member management
+    - 🌐 **Moments** — social feed with text + up to 9 photos or 1 video (≤ 10 min), likes, comments, tag-based visibility
+    - ⏱️ **Auto-Delete Messages** — 5 tiers: never / 1 day / 3 days / 1 week / 1 month
+    - 🔔 **Push Notifications** — Web Push (VAPID) + OneSignal dual-channel
     - 🌐 **Multi-language** — Chinese, English, Japanese, Korean, French, German, Russian, Spanish
     - 📱 **iOS PWA** — "Add to Home Screen" via Safari, no enterprise cert needed
     - 💬 Rich messaging: text, images, voice, 200+ emoji (8 categories), Telegram sticker packs, delivery receipts, typing indicators
-    - 🗂️ **Cloudflare R2** file storage (images & voice messages)
+    - 🗂️ **Cloudflare R2** file storage (images, voice & video)
     - 🏷️ **Friend Tags** — tag-based contact filtering & Moments visibility control
+    - 🎭 **Telegram Sticker Packs** — dynamic sticker packs with configurable pack list, unlimited quantity
     - 🔑 **Two-Factor Auth (2FA)** — Google Authenticator TOTP, 8 recovery codes
 
     ## After Deployment
     1. Open the domain assigned to the **client** service.
     2. Register an account — cryptographic keys are generated locally on your device.
-    3. (Optional) Configure Cloudflare R2 for image/voice uploads — set `R2_*` variables on the **server** service.
+    3. (Optional) Configure Cloudflare R2 for image/voice/video uploads — set `R2_*` variables on the **server** service.
     4. (Optional) Configure Cloudflare TURN for cross-network video calls — set `CF_CALLS_APP_ID` and `CF_CALLS_APP_SECRET`.
+    5. (Optional) Enable push notifications — set `VAPID_*` variables for Web Push.
+    6. (Optional) Enable Telegram sticker packs — set `TELEGRAM_BOT_TOKEN` and optionally `STICKER_PACKS`.
 
     ## Docker Hub Images
     - `facilisvelox/paperphone-client:latest`
@@ -406,6 +413,28 @@ localization:
           逗号分隔的 Telegram 贴纸包配置，格式为 包名:显示名称
           （如 pack_name:我的贴纸,other_pack:另一个包）。数量无上限。
           留空则使用内置的 8 个默认贴纸包。
+      - key: VAPID_PUBLIC_KEY
+        type: STRING
+        name: VAPID 公钥（可选）
+        description: >-
+          Web Push 消息推送所需的 VAPID 公钥。通过 npx web-push generate-vapid-keys 生成。
+          留空则禁用浏览器推送功能。
+      - key: VAPID_PRIVATE_KEY
+        type: STRING
+        name: VAPID 私钥（可选）
+        description: 与上方 VAPID 公钥配对使用的私钥。
+      - key: VAPID_SUBJECT
+        type: STRING
+        name: VAPID 联系邮箱（可选）
+        description: VAPID 联系邮箱，如 mailto:admin@yoursite.com。
+      - key: ONESIGNAL_APP_ID
+        type: STRING
+        name: OneSignal App ID（可选）
+        description: 通过 Median.co 原生 App 推送所需。从 OneSignal Dashboard → Settings → Keys & IDs 获取。
+      - key: ONESIGNAL_REST_KEY
+        type: STRING
+        name: OneSignal REST API Key（可选）
+        description: 与上方 OneSignal App ID 配对使用的 REST API Key。
     readme: |-
       # PaperPhone IM
 
@@ -418,15 +447,22 @@ localization:
 
       ## 功能亮点
       - 📹 **视频/语音通话** — WebRTC P2P（1:1）+ Mesh 多人（≤6 人）
+      - 👥 **群聊** — 最多 2000 人群组，纯文本消息，免打扰模式，成员管理
+      - 🌐 **朋友圈** — 文字 + 最多 9 张图或 1 个视频（≤10 分钟），点赞、评论、标签可见性控制
+      - ⏱️ **消息自动删除** — 5 档可选（永不/1天/3天/1周/1月）
+      - 🔔 **消息推送** — Web Push (VAPID) + OneSignal 双通道
       - 🌐 **多语言** — 中文、英文、日语、韩语、法语、德语、俄语、西班牙语
       - 📱 **iOS 永久免签** — Safari「添加到主屏幕」，无需企业证书
       - 💬 富文本消息、图片、语音、Emoji（200+，8 分类）、Telegram 贴纸包、送达回执、打字状态
-      - 🗂️ **Cloudflare R2** 对象存储（图片与语音消息）
+      - 🗂️ **Cloudflare R2** 对象存储（图片、语音与视频）
       - 🏷️ **好友标签** — 标签分类筛选通讯录 + 朋友圈可见性控制
+      - 🎭 **Telegram 贴纸包** — 动态贴纸包管理，可自定义包列表，数量无上限
       - 🔑 **两步验证 (2FA)** — Google Authenticator TOTP，8 个恢复码
 
       ## 部署后操作
       1. 打开分配给 **client** 服务的域名。
       2. 注册账号 — 密钥在本地设备生成。
-      3. （可选）在 **server** 服务设置 `R2_*` 变量，启用图片/语音上传功能。
+      3. （可选）在 **server** 服务设置 `R2_*` 变量，启用图片/语音/视频上传功能。
       4. （可选）配置 Cloudflare TURN 以支持跨公网视频通话。
+      5. （可选）设置 `VAPID_*` 变量启用浏览器推送通知。
+      6. （可选）设置 `TELEGRAM_BOT_TOKEN` 和 `STICKER_PACKS` 启用 Telegram 贴纸包功能。

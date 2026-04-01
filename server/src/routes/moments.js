@@ -75,6 +75,18 @@ async function initMomentsTables() {
       FOREIGN KEY (moment_id) REFERENCES moments(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  // Moment videos table
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS moment_videos (
+      id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      moment_id   BIGINT UNSIGNED NOT NULL,
+      url         TEXT            NOT NULL,
+      thumbnail   TEXT            DEFAULT NULL,
+      duration    SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+      INDEX idx_moment_id (moment_id),
+      FOREIGN KEY (moment_id) REFERENCES moments(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
   // Idempotent migration: add visibility column
   try {
     await db.query(`
@@ -100,6 +112,11 @@ async function enrichMoments(moments, viewerUserId) {
   // Images
   const [imgs] = await db.query(
     `SELECT moment_id, url, sort_order FROM moment_images WHERE moment_id IN (${placeholders}) ORDER BY moment_id, sort_order`,
+    ids
+  );
+  // Videos
+  const [vids] = await db.query(
+    `SELECT moment_id, url, thumbnail, duration FROM moment_videos WHERE moment_id IN (${placeholders})`,
     ids
   );
   // Likes counts + whether viewer liked
@@ -131,6 +148,8 @@ async function enrichMoments(moments, viewerUserId) {
 
   const imgMap = {};
   imgs.forEach(r => { (imgMap[r.moment_id] = imgMap[r.moment_id] || []).push(r.url); });
+  const vidMap = {};
+  vids.forEach(r => { vidMap[r.moment_id] = { url: r.url, thumbnail: r.thumbnail, duration: r.duration }; });
   const likeMap = {};
   likes.forEach(r => { likeMap[r.moment_id] = { cnt: Number(r.cnt), viewerLiked: !!r.viewer_liked }; });
   const likedUserMap = {};
@@ -146,6 +165,7 @@ async function enrichMoments(moments, viewerUserId) {
   return moments.map(m => ({
     ...m,
     images: imgMap[m.id] || [],
+    video: vidMap[m.id] || null,
     likes: (likeMap[m.id] || {}).cnt || 0,
     viewerLiked: (likeMap[m.id] || {}).viewerLiked || false,
     likedUsers: likedUserMap[m.id] || [],
@@ -157,7 +177,7 @@ async function enrichMoments(moments, viewerUserId) {
 router.post('/', async (req, res, next) => {
   try {
     const {
-      text = '', images = [],
+      text = '', images = [], video = null,
       visibility = 'public',
       visible_tags = [], visible_users = [],
       invisible_tags = [], invisible_users = []
@@ -165,7 +185,11 @@ router.post('/', async (req, res, next) => {
 
     if (text.length > 1024) return res.status(400).json({ error: 'Text too long (max 1024)' });
     if (!Array.isArray(images) || images.length > 9) return res.status(400).json({ error: 'Max 9 images' });
-    if (!text.trim() && images.length === 0) return res.status(400).json({ error: 'Text or images required' });
+    // Video and images are mutually exclusive
+    if (video && images.length > 0) return res.status(400).json({ error: 'Cannot post video and images together' });
+    if (!text.trim() && images.length === 0 && !video) return res.status(400).json({ error: 'Text, images, or video required' });
+    if (video && (!video.url || typeof video.url !== 'string')) return res.status(400).json({ error: 'Invalid video' });
+    if (video && video.duration > 600) return res.status(400).json({ error: 'Video too long (max 10 min)' });
     if (!['public', 'whitelist', 'blacklist'].includes(visibility)) {
       return res.status(400).json({ error: 'Invalid visibility' });
     }
@@ -182,6 +206,14 @@ router.post('/', async (req, res, next) => {
       await db.query(
         'INSERT INTO moment_images (moment_id, url, sort_order) VALUES (?,?,?)',
         [momentId, images[i], i]
+      );
+    }
+
+    // Insert video
+    if (video) {
+      await db.query(
+        'INSERT INTO moment_videos (moment_id, url, thumbnail, duration) VALUES (?,?,?,?)',
+        [momentId, video.url, video.thumbnail || null, Math.round(video.duration || 0)]
       );
     }
 
@@ -324,6 +356,7 @@ router.delete('/:id', async (req, res, next) => {
     if (rows[0].user_id !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
     await db.query('DELETE FROM moment_visibility WHERE moment_id=?', [req.params.id]);
     await db.query('DELETE FROM moment_images WHERE moment_id=?', [req.params.id]);
+    await db.query('DELETE FROM moment_videos WHERE moment_id=?', [req.params.id]);
     await db.query('DELETE FROM moment_likes WHERE moment_id=?', [req.params.id]);
     await db.query('DELETE FROM moment_comments WHERE moment_id=?', [req.params.id]);
     await db.query('DELETE FROM moments WHERE id=?', [req.params.id]);

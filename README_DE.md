@@ -24,7 +24,7 @@ Eine Instant-Messaging-App im WeChat-Stil mit Ende-zu-Ende-Verschlüsselung übe
 | 🌐 Mehrsprachig | ZH/EN/JA/KO/FR/DE/RU/ES — automatische Erkennung + manuelle Umschaltung |
 | 📱 iOS ohne Unternehmenszertifikat | PWA über Safari „Zum Home-Bildschirm", funktioniert dauerhaft ohne Apple-Signatur |
 | 💬 Rich Messaging | Text, Bilder, Sprachnachrichten, 200+ Emoji-Panel (8 Kategorien), Telegram-Stickerpakete, Lesebestätigungen |
-| 🌐 Momente | Sozialer Feed: Text + bis zu 9 Fotos, Likes (Freunde-Avatare), Kommentare, Tag-basierte Sichtbarkeit |
+| 🌐 Momente | Sozialer Feed: Text + bis zu 9 Fotos oder 1 Video (≤ 10 Min.), Likes (Freunde-Avatare), Kommentare, Tag-basierte Sichtbarkeit |
 | 🏷️ Freunde-Tags | Mehrere Tags pro Freund (12-Farben-Palette), Kontakte nach Tags filtern |
 | 🗂️ R2-Speicher | Cloudflare R2 für Bild-/Audiodateien — optionale CDN-URL |
 | 🔑 Zwei-Faktor-Auth (2FA) | Google Authenticator–kompatibles TOTP, 8 einmalige Wiederherstellungscodes, Pflichtprüfung bei Anmeldung |
@@ -140,7 +140,7 @@ Server sieht: ✅ Chiffretext + Routing-Metadaten  ❌ Klartext / private Schlü
 
 ## Datenbankschema
 
-12 Tabellen, automatisch beim ersten Start erstellt:
+13 Tabellen, automatisch beim ersten Start erstellt:
 
 | Tabelle | Zweck |
 |---------|-------|
@@ -150,6 +150,7 @@ Server sieht: ✅ Chiffretext + Routing-Metadaten  ❌ Klartext / private Schlü
 | `groups` / `group_members` | Gruppenchats + Mitglieder |
 | `messages` | Verschlüsselte Nachrichten |
 | `moments` / `moment_images` | Soziale Beiträge + Bilder |
+| `moment_videos` | Beitrags-Videos (Vorschaubild + Dauer, 1 pro Beitrag, ≤ 10 Min.) |
 | `moment_likes` / `moment_comments` | Likes + Kommentare |
 | `push_subscriptions` | Web Push (VAPID) |
 | `onesignal_players` | OneSignal-Geräte (Median.co) |
