@@ -247,6 +247,47 @@ function initWsServer(httpServer) {
           // Group call — broadcast to all group members except sender
           await sendToGroup(msg.group_id, envelope, ws.userId);
         }
+
+        // ── Push notification for incoming calls ─────────────────────
+        // Send push even if the user is online, because the app may be
+        // in the background and the WebSocket message alone won't wake it.
+        if (msg.type === 'call_offer' || msg.type === 'call_invite') {
+          const db = getDb();
+          const [senderRows] = await db.query(
+            'SELECT nickname, username FROM users WHERE id = ?', [ws.userId]
+          );
+          const senderName = senderRows[0]?.nickname || senderRows[0]?.username || 'Someone';
+          const isVideo = !!msg.is_video;
+          const pushPayload = {
+            type: 'incoming_call',
+            title: 'PaperPhone',
+            body: isVideo
+              ? `${senderName} invites you to a video call`
+              : `${senderName} invites you to a voice call`,
+            data: {
+              type: 'incoming_call',
+              from: ws.userId,
+              call_id: msg.call_id,
+              is_video: isVideo,
+            },
+          };
+
+          if (msg.to) {
+            // 1-to-1 call push
+            pushToUser(msg.to, pushPayload).catch(() => {});
+            pushToUserOneSignal(msg.to, pushPayload).catch(() => {});
+          } else if (msg.group_id) {
+            // Group call push — notify all members except caller
+            const [members] = await db.query(
+              'SELECT user_id FROM group_members WHERE group_id = ? AND user_id != ?',
+              [msg.group_id, ws.userId]
+            );
+            for (const { user_id } of members) {
+              pushToUser(user_id, pushPayload).catch(() => {});
+              pushToUserOneSignal(user_id, pushPayload).catch(() => {});
+            }
+          }
+        }
       }
     });
 

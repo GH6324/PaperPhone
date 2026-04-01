@@ -88,6 +88,17 @@ self.addEventListener('push', e => {
     options.tag = `msg-${payload.data?.from || 'unknown'}`;
   }
 
+  // Incoming call — high-priority notification with actions
+  if (payload.type === 'incoming_call') {
+    options.tag = `call-${payload.data?.call_id || 'unknown'}`;
+    options.requireInteraction = true;  // keep visible until user interacts
+    options.vibrate = [300, 100, 300, 100, 300];  // longer vibration pattern
+    options.actions = [
+      { action: 'accept', title: '📞 Accept' },
+      { action: 'decline', title: '❌ Decline' },
+    ];
+  }
+
   e.waitUntil(
     self.registration.showNotification(title, options)
   );
@@ -97,11 +108,26 @@ self.addEventListener('push', e => {
 self.addEventListener('notificationclick', e => {
   e.notification.close();
 
+  const data = e.notification.data || {};
+  const action = e.action;
+
+  // Decline action — just close the notification, do nothing else
+  if (action === 'decline') return;
+
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
       // If a PaperPhone window is already open, focus it
       for (const client of windowClients) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
+          // Notify the client about the incoming call click
+          if (data.type === 'incoming_call') {
+            client.postMessage({
+              type: 'incoming_call_clicked',
+              from: data.from,
+              call_id: data.call_id,
+              is_video: data.is_video,
+            });
+          }
           return client.focus();
         }
       }

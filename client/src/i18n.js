@@ -136,6 +136,8 @@ const TRANSLATIONS = {
     callBusy: '当前已有通话进行中',
     callMediaFailed: '无法访问摄像头/麦克风',
     unknownCaller: '未知来电',
+    callPushVideo: '邀请您进行视频通话',
+    callPushVoice: '邀请您进行语音通话',
     // Moments
     cancel: '取消',
     newMoment: '发动态',
@@ -423,6 +425,8 @@ const TRANSLATIONS = {
     callBusy: 'Already in a call',
     callMediaFailed: 'Cannot access camera/mic',
     unknownCaller: 'Unknown Caller',
+    callPushVideo: 'is inviting you to a video call',
+    callPushVoice: 'is inviting you to a voice call',
     // Moments
     cancel: 'Cancel',
     newMoment: 'New Post',
@@ -710,6 +714,8 @@ const TRANSLATIONS = {
     callBusy: '通話中です',
     callMediaFailed: 'カメラ/マイクにアクセスできません',
     unknownCaller: '不明の発信者',
+    callPushVideo: 'がビデオ通話に招待しています',
+    callPushVoice: 'が音声通話に招待しています',
     // Moments
     cancel: 'キャンセル',
     newMoment: '投稿する',
@@ -997,6 +1003,8 @@ const TRANSLATIONS = {
     callBusy: '이미 통화 중입니다',
     callMediaFailed: '카메라/마이크에 접근할 수 없습니다',
     unknownCaller: '알 수 없는 전화',
+    callPushVideo: '님이 영상통화를 요청합니다',
+    callPushVoice: '님이 음성통화를 요청합니다',
     // Moments
     cancel: '취소',
     newMoment: '게시하기',
@@ -1284,6 +1292,8 @@ const TRANSLATIONS = {
     callBusy: 'Déjà en appel',
     callMediaFailed: 'Impossible d\'accéder à la caméra/mic',
     unknownCaller: 'Appelant inconnu',
+    callPushVideo: 'vous invite à un appel vidéo',
+    callPushVoice: 'vous invite à un appel vocal',
     // Moments
     cancel: 'Annuler',
     newMoment: 'Nouvelle publication',
@@ -1570,6 +1580,8 @@ const TRANSLATIONS = {
     callBusy: 'Bereits in einem Anruf',
     callMediaFailed: 'Zugriff auf Kamera/Mikrofon nicht möglich',
     unknownCaller: 'Unbekannter Anrufer',
+    callPushVideo: 'lädt Sie zu einem Videoanruf ein',
+    callPushVoice: 'lädt Sie zu einem Sprachanruf ein',
     // Moments
     cancel: 'Abbrechen',
     newMoment: 'Neuer Beitrag',
@@ -1856,6 +1868,8 @@ const TRANSLATIONS = {
     callBusy: 'Уже идёт вызов',
     callMediaFailed: 'Нет доступа к камере/микрофону',
     unknownCaller: 'Неизвестный',
+    callPushVideo: 'приглашает вас на видеозвонок',
+    callPushVoice: 'приглашает вас на голосовой звонок',
     // Moments
     cancel: 'Отмена',
     newMoment: 'Новый пост',
@@ -2142,6 +2156,8 @@ const TRANSLATIONS = {
     callBusy: 'Ya hay una llamada en curso',
     callMediaFailed: 'No se puede acceder a la cámara/micrófono',
     unknownCaller: 'Llamante desconocido',
+    callPushVideo: 'te invita a una videollamada',
+    callPushVoice: 'te invita a una llamada de voz',
     // Moments
     cancel: 'Cancelar',
     newMoment: 'Nueva publicación',
