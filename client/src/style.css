@@ -527,6 +527,226 @@ html, body {
   transform: scale(0.95);
 }
 
+/* ── Video Bubble ─────────────────────────────────────────── */
+.bubble-video {
+  max-width: 260px;
+  max-height: 300px;
+  border-radius: 16px;
+  display: block;
+  object-fit: cover;
+  background: #000;
+  cursor: pointer;
+}
+.bubble-video::-webkit-media-controls-panel {
+  border-radius: 0 0 16px 16px;
+}
+
+/* ── File Bubble ──────────────────────────────────────────── */
+.bubble-file {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 2px;
+  min-width: 200px;
+  max-width: 280px;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 8px;
+  transition: background .15s ease;
+}
+.bubble-file:active {
+  background: rgba(0,0,0,.04);
+}
+
+.file-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.12);
+  position: relative;
+  overflow: hidden;
+}
+.file-icon::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 50%;
+  bottom: 50%;
+  background: rgba(255,255,255,.18);
+  border-radius: 10px 0 0 0;
+}
+.file-icon-pdf  { background: linear-gradient(135deg, #E53935, #D32F2F); }
+.file-icon-doc  { background: linear-gradient(135deg, #1E88E5, #1565C0); }
+.file-icon-xls  { background: linear-gradient(135deg, #43A047, #2E7D32); }
+.file-icon-ppt  { background: linear-gradient(135deg, #FB8C00, #EF6C00); }
+.file-icon-zip  { background: linear-gradient(135deg, #78909C, #546E7A); }
+.file-icon-vid  { background: linear-gradient(135deg, #8E24AA, #6A1B9A); }
+.file-icon-img  { background: linear-gradient(135deg, #26A69A, #00897B); }
+.file-icon-audio { background: linear-gradient(135deg, #F06292, #E91E63); }
+.file-icon-code { background: linear-gradient(135deg, #5C6BC0, #3949AB); }
+.file-icon-txt  { background: linear-gradient(135deg, #8D6E63, #6D4C41); }
+.file-icon-default { background: linear-gradient(135deg, #607D8B, #455A64); }
+
+.file-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.file-name {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
+  word-break: break-all;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.file-size {
+  font-size: 12px;
+  opacity: .6;
+  font-weight: 400;
+}
+
+.file-download-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background .15s ease, transform .12s ease;
+  color: var(--green);
+}
+.file-download-btn:active {
+  background: rgba(0,0,0,.12);
+  transform: scale(0.88);
+}
+
+/* ── Attachment Panel (slide-up options) ───────────────────── */
+.attach-panel {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  animation: attachSlideUp .25s cubic-bezier(.32,.72,0,1);
+}
+.attach-panel.attach-closing {
+  animation: attachSlideDown .2s cubic-bezier(.32,.72,0,1) forwards;
+}
+@keyframes attachSlideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes attachSlideDown {
+  from { transform: translateY(0); }
+  to   { transform: translateY(100%); }
+}
+.attach-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 299;
+  background: rgba(0,0,0,.35);
+  animation: fadeIn .2s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.attach-sheet {
+  background: var(--surface);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border-radius: 18px 18px 0 0;
+  border: 0.5px solid var(--glass-border);
+  border-bottom: none;
+  box-shadow: var(--glass-specular), var(--shadow-lg);
+  padding: 8px 0 max(12px, var(--safe-bottom));
+  z-index: 300;
+}
+.attach-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--divider);
+  margin: 6px auto 12px;
+}
+.attach-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 24px;
+  cursor: pointer;
+  transition: background .15s ease, transform .12s ease;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  color: var(--text);
+}
+.attach-option:active {
+  background: var(--surface-2);
+  transform: scale(0.985);
+}
+.attach-option-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,.1);
+}
+.attach-option-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: #fff;
+}
+.attach-option-label {
+  font-size: 16px;
+  font-weight: 500;
+}
+.attach-cancel {
+  display: block;
+  width: calc(100% - 32px);
+  margin: 8px 16px 4px;
+  padding: 14px;
+  border: none;
+  background: var(--surface-2);
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--red);
+  cursor: pointer;
+  transition: background .15s ease, transform .12s ease;
+  text-align: center;
+}
+.attach-cancel:active {
+  background: var(--surface);
+  transform: scale(0.97);
+}
+
 .msg-time-sep {
   text-align: center;
   font-size: 12px;

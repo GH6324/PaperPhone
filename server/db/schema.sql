@@ -159,6 +159,16 @@ PREPARE mt_stmt FROM @mt_sql;
 EXECUTE mt_stmt;
 DEALLOCATE PREPARE mt_stmt;
 
+-- Migration: add 'video' to msg_type ENUM (idempotent)
+SET @mt_vid = (SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'messages' AND COLUMN_NAME = 'msg_type');
+SET @mt_vid_sql = IF(@mt_vid NOT LIKE '%video\'%',
+  "ALTER TABLE messages MODIFY COLUMN msg_type ENUM('text','image','file','voice','video_call','system','sticker','video') NOT NULL DEFAULT 'text'",
+  'SELECT 1');
+PREPARE mt_vid_stmt FROM @mt_vid_sql;
+EXECUTE mt_vid_stmt;
+DEALLOCATE PREPARE mt_vid_stmt;
+
 -- ── Moments (朋友圈) ──────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS moments (
   id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

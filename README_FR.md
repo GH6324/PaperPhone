@@ -23,7 +23,7 @@ Une application de messagerie instantanée chiffrée de bout en bout, style WeCh
 | 🔔 Notifications push | Web Push (VAPID) + OneSignal double canal |
 | 🌐 Multilingue | 中/EN/日/한/FR/DE/RU/ES — détection auto + sélection manuelle |
 | 📱 iOS PWA | Safari « Ajouter à l'écran d'accueil », sans certificat Apple |
-| 💬 Messagerie riche | Texte, images, audio, 200+ émojis (8 catégories), packs de stickers Telegram, accusés de réception |
+| 💬 Messagerie riche | Texte, images, vidéo, fichiers (PDF/DOCX/XLSX etc. avec icônes de type), audio, 200+ émojis (8 catégories), packs de stickers Telegram, accusés de réception |
 | 🌐 Moments | Fil social : texte + 9 photos ou 1 vidéo (≤ 10 min), likes (avatars), commentaires, visibilité par tags |
 | 🏷️ Tags d'amis | Plusieurs tags par ami (12 couleurs), filtrage des contacts |
 | 🗂️ Stockage R2 | Cloudflare R2 pour images/audio — CDN optionnel |

@@ -23,7 +23,7 @@ Una aplicación de mensajería instantánea cifrada de extremo a extremo estilo 
 | 🔔 Notificaciones push | Web Push (VAPID) + OneSignal canal doble |
 | 🌐 Multilingüe | ZH/EN/JA/KO/FR/DE/RU/ES — detección automática + selección manual |
 | 📱 iOS sin certificado empresarial | PWA vía Safari "Añadir a inicio", sin firma de Apple |
-| 💬 Mensajería rica | Texto, imágenes, mensajes de voz, 200+ emojis (8 categorías), packs de stickers Telegram, confirmaciones de lectura |
+| 💬 Mensajería rica | Texto, imágenes, video, archivos (PDF/DOCX/XLSX etc. con iconos de tipo), mensajes de voz, 200+ emojis (8 categorías), packs de stickers Telegram, confirmaciones de lectura |
 | 🌐 Momentos | Feed social: texto + hasta 9 fotos o 1 vídeo (≤ 10 min), likes (avatares de amigos), comentarios, visibilidad por etiquetas |
 | 🏷️ Etiquetas de amigos | Múltiples etiquetas por amigo (paleta de 12 colores), filtrar contactos por etiqueta |
 | 🗂️ Almacenamiento R2 | Cloudflare R2 para imágenes/audio — URL CDN opcional |

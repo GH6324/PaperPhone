@@ -125,12 +125,19 @@ export async function renderChat(root, chat) {
         <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
       </svg>
     </button>
+    <button class="input-toolbar-btn" id="attach-btn" title="${t('attachFile')}">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+        <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 0 1 5 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6h-1.5v9.5a2.5 2.5 0 0 0 5 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6H16.5z"/>
+      </svg>
+    </button>
     <button class="send-btn hidden" id="send-btn" aria-label="${t('inputPlaceholder')}">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
         <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
       </svg>
     </button>
-    <input type="file" id="file-input" accept="image/*,audio/*,video/*" class="hidden">
+    <input type="file" id="file-input" accept="image/*" class="hidden">
+    <input type="file" id="video-input" accept="video/*" class="hidden">
+    <input type="file" id="doc-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z,.tar,.gz,.json,.xml,.html,.css,.js,.ts,.py,.java,.c,.cpp,.md,.rtf,.odt,.ods,.odp" class="hidden">
   `;
   root.appendChild(toolbar);
 
@@ -164,6 +171,43 @@ export async function renderChat(root, chat) {
     }
   }
 
+  // ── File type helpers ─────────────────────────────────────────
+  function getFileIconClass(fileName) {
+    const ext = (fileName || '').split('.').pop().toLowerCase();
+    const map = {
+      pdf: 'file-icon-pdf',
+      doc: 'file-icon-doc', docx: 'file-icon-doc', odt: 'file-icon-doc', rtf: 'file-icon-doc',
+      xls: 'file-icon-xls', xlsx: 'file-icon-xls', csv: 'file-icon-xls', ods: 'file-icon-xls',
+      ppt: 'file-icon-ppt', pptx: 'file-icon-ppt', odp: 'file-icon-ppt',
+      zip: 'file-icon-zip', rar: 'file-icon-zip', '7z': 'file-icon-zip', tar: 'file-icon-zip', gz: 'file-icon-zip',
+      mp4: 'file-icon-vid', mov: 'file-icon-vid', avi: 'file-icon-vid', mkv: 'file-icon-vid', webm: 'file-icon-vid',
+      png: 'file-icon-img', jpg: 'file-icon-img', jpeg: 'file-icon-img', gif: 'file-icon-img', webp: 'file-icon-img', svg: 'file-icon-img',
+      mp3: 'file-icon-audio', wav: 'file-icon-audio', ogg: 'file-icon-audio', flac: 'file-icon-audio', aac: 'file-icon-audio',
+      js: 'file-icon-code', ts: 'file-icon-code', py: 'file-icon-code', java: 'file-icon-code', c: 'file-icon-code', cpp: 'file-icon-code',
+      html: 'file-icon-code', css: 'file-icon-code', json: 'file-icon-code', xml: 'file-icon-code', md: 'file-icon-code',
+      txt: 'file-icon-txt',
+    };
+    return map[ext] || 'file-icon-default';
+  }
+  function getFileIconLabel(fileName) {
+    const ext = (fileName || '').split('.').pop().toUpperCase();
+    if (ext.length > 4) return 'FILE';
+    return ext || 'FILE';
+  }
+  function formatFileSize(bytes) {
+    if (!bytes || bytes <= 0) return '';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+  function parseFileMeta(text) {
+    try {
+      const obj = JSON.parse(text);
+      if (obj && obj.url) return obj;
+    } catch {}
+    return null;
+  }
+
   // ── Render bubble ─────────────────────────────────────────────
   let _msgIdMap = {};
   let _unreadMsgIds = [];
@@ -184,6 +228,24 @@ export async function renderChat(root, chat) {
         <button class="voice-play-btn" data-src="${esc(extra.url || text)}">▶</button>
         <span class="voice-dur">${extra.duration || '?'}″</span>
       </div>`;
+    } else if (msgType === 'video') {
+      content = `<video class="bubble-video" src="${esc(extra.url || text)}" controls playsinline preload="metadata"></video>`;
+    } else if (msgType === 'file') {
+      const fName = extra.fileName || text.split('/').pop() || 'file';
+      const fSize = formatFileSize(extra.fileSize);
+      const iconCls = getFileIconClass(fName);
+      const iconLbl = getFileIconLabel(fName);
+      const dlUrl = esc(extra.url || text);
+      content = `<a class="bubble-file" href="${dlUrl}" target="_blank" rel="noopener" download>
+        <div class="file-icon ${iconCls}">${iconLbl}</div>
+        <div class="file-meta">
+          <span class="file-name">${esc(fName)}</span>
+          ${fSize ? `<span class="file-size">${fSize}</span>` : ''}
+        </div>
+        <button class="file-download-btn" title="${t('downloadFile')}">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        </button>
+      </a>`;
     } else {
       content = esc(text);
     }
@@ -203,17 +265,13 @@ export async function renderChat(root, chat) {
       bubble.innerHTML = content;
       wrapper.appendChild(bubble);
       row.appendChild(wrapper);
-      if (msgType === 'image') bubble.querySelector('.bubble-image')?.addEventListener('click', e => showImageViewer(e.target.src));
-      if (isSticker) bubble.querySelector('.bubble-sticker')?.addEventListener('click', e => showImageViewer(e.target.src));
-      if (msgType === 'voice') bubble.querySelector('.voice-play-btn')?.addEventListener('click', e => new Audio(e.currentTarget.dataset.src).play());
+      bindBubbleEvents(bubble, msgType);
     } else {
       if (!fromMe) row.appendChild(avatarEl(chat.name, chat.avatar, 'avatar-sm'));
       const bubble = document.createElement('div');
       bubble.className = `bubble${isSticker ? ' sticker-bubble' : ''}`;
       bubble.innerHTML = content;
-      if (msgType === 'image') bubble.querySelector('.bubble-image')?.addEventListener('click', e => showImageViewer(e.target.src));
-      if (isSticker) bubble.querySelector('.bubble-sticker')?.addEventListener('click', e => showImageViewer(e.target.src));
-      if (msgType === 'voice') bubble.querySelector('.voice-play-btn')?.addEventListener('click', e => new Audio(e.currentTarget.dataset.src).play());
+      bindBubbleEvents(bubble, msgType);
       row.appendChild(bubble);
     }
 
@@ -234,6 +292,14 @@ export async function renderChat(root, chat) {
     msgArea.scrollTop = msgArea.scrollHeight;
   }
 
+  function bindBubbleEvents(bubble, msgType) {
+    if (msgType === 'image') bubble.querySelector('.bubble-image')?.addEventListener('click', e => showImageViewer(e.target.src));
+    if (msgType === 'sticker') bubble.querySelector('.bubble-sticker')?.addEventListener('click', e => showImageViewer(e.target.src));
+    if (msgType === 'voice') bubble.querySelector('.voice-play-btn')?.addEventListener('click', e => new Audio(e.currentTarget.dataset.src).play());
+    // File download btn: stop propagation so the <a> handles it
+    if (msgType === 'file') bubble.querySelector('.file-download-btn')?.addEventListener('click', e => { e.stopPropagation(); });
+  }
+
   // ── Group chat warning banner ──────────────────────────────────
   if (chat.type === 'group') {
     const banner = document.createElement('div');
@@ -248,6 +314,27 @@ export async function renderChat(root, chat) {
   }
 
   // ── Load history ──────────────────────────────────────────────
+  function extractMediaExtra(text, msgType) {
+    const extra = {};
+    if (['image', 'voice', 'sticker'].includes(msgType)) {
+      extra.url = text;
+    } else if (msgType === 'video') {
+      const meta = parseFileMeta(text);
+      if (meta) { extra.url = meta.url; } else { extra.url = text; }
+    } else if (msgType === 'file') {
+      const meta = parseFileMeta(text);
+      if (meta) {
+        extra.url = meta.url;
+        extra.fileName = meta.fileName;
+        extra.fileSize = meta.fileSize;
+        extra.fileType = meta.fileType;
+      } else {
+        extra.url = text;
+      }
+    }
+    return extra;
+  }
+
   try {
     const history = chat.type === 'group'
       ? await api.groupHistory(chat.id)
@@ -261,20 +348,26 @@ export async function renderChat(root, chat) {
       if (chat.type === 'group') {
         // Group messages are plain text (not encrypted)
         text = row.ciphertext || '';
-        if (['image', 'voice', 'file', 'sticker'].includes(row.msg_type)) extra = { url: text };
+        if (['image', 'voice', 'file', 'sticker', 'video'].includes(row.msg_type)) {
+          extra = extractMediaExtra(text, row.msg_type);
+        }
         extra.senderName = row.from_nickname || '?';
         extra.senderAvatar = row.from_avatar || null;
       } else if (chat.type === 'private' && !fromMe && row.header) {
         const plain = await tryDecrypt(row.ciphertext, row.header);
         if (plain !== null) {
           text = plain;
-          if (['image', 'voice', 'file', 'sticker'].includes(row.msg_type)) extra = { url: text };
+          if (['image', 'voice', 'file', 'sticker', 'video'].includes(row.msg_type)) {
+            extra = extractMediaExtra(text, row.msg_type);
+          }
         }
       } else if (chat.type === 'private' && fromMe && row.self_ciphertext && row.self_header) {
         const plain = await tryDecrypt(row.self_ciphertext, row.self_header);
         if (plain !== null) {
           text = plain;
-          if (['image', 'voice', 'file', 'sticker'].includes(row.msg_type)) extra = { url: text };
+          if (['image', 'voice', 'file', 'sticker', 'video'].includes(row.msg_type)) {
+            extra = extractMediaExtra(text, row.msg_type);
+          }
         }
         if (row.read_at) extra.read_at = row.read_at;
       } else if (fromMe) {
@@ -335,7 +428,10 @@ export async function renderChat(root, chat) {
       client_id: msgId,
     });
     const c = state.chats.find(s => s.id === chat.id);
-    if (c) { c.lastMsg = msgType === 'text' ? text : (msgType === 'sticker' ? '[Sticker]' : t('imageLabel')); c.lastTs = Date.now(); }
+    if (c) {
+      const labelMap = { text: text, sticker: '[Sticker]', image: t('imageLabel'), video: t('videoLabel'), file: t('fileLabel'), voice: t('sendingVoice') };
+      c.lastMsg = labelMap[msgType] || t('imageLabel'); c.lastTs = Date.now();
+    }
   }
 
   // ── Input events ──────────────────────────────────────────────
@@ -343,7 +439,10 @@ export async function renderChat(root, chat) {
   const sendBtn = toolbar.querySelector('#send-btn');
   const emojiBtn = toolbar.querySelector('#emoji-btn');
   const imgBtn = toolbar.querySelector('#img-btn');
+  const attachBtn = toolbar.querySelector('#attach-btn');
   const fileInput = toolbar.querySelector('#file-input');
+  const videoInput = toolbar.querySelector('#video-input');
+  const docInput = toolbar.querySelector('#doc-input');
 
   inputEl.addEventListener('input', () => {
     inputEl.style.height = 'auto';
@@ -373,7 +472,7 @@ export async function renderChat(root, chat) {
     if (text) { sendMessage(text); inputEl.value = ''; inputEl.style.height = 'auto'; sendBtn.classList.add('hidden'); emojiBtn.classList.remove('hidden'); }
   });
 
-  // Image upload
+  // Image upload (quick-select)
   imgBtn.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files[0];
@@ -381,11 +480,93 @@ export async function renderChat(root, chat) {
     try {
       showToast(t('uploading'));
       const { url } = await api.upload(file);
-      const isImg = file.type.startsWith('image');
-      sendMessage(url, isImg ? 'image' : 'file', { url });
+      sendMessage(url, 'image', { url });
     } catch { showToast(t('uploadFailed')); }
     fileInput.value = '';
   });
+
+  // Video upload
+  videoInput.addEventListener('change', async () => {
+    const file = videoInput.files[0];
+    if (!file) return;
+    try {
+      showToast(t('uploading'));
+      const res = await api.upload(file);
+      const meta = JSON.stringify({ url: res.url, fileName: res.name, fileSize: res.size, fileType: res.type });
+      sendMessage(meta, 'video', { url: res.url });
+    } catch { showToast(t('uploadFailed')); }
+    videoInput.value = '';
+  });
+
+  // Document upload
+  docInput.addEventListener('change', async () => {
+    const file = docInput.files[0];
+    if (!file) return;
+    try {
+      showToast(t('uploading'));
+      const res = await api.upload(file);
+      const meta = JSON.stringify({ url: res.url, fileName: res.name, fileSize: res.size, fileType: res.type });
+      sendMessage(meta, 'file', { url: res.url, fileName: res.name, fileSize: res.size, fileType: res.type });
+    } catch { showToast(t('uploadFailed')); }
+    docInput.value = '';
+  });
+
+  // ── Attachment Panel ─────────────────────────────────────────
+  let attachPanel = null;
+  attachBtn.addEventListener('click', () => {
+    if (attachPanel) { closeAttachPanel(); return; }
+    openAttachPanel();
+  });
+
+  function closeAttachPanel() {
+    if (!attachPanel) return;
+    const overlay = document.querySelector('.attach-overlay');
+    attachPanel.classList.add('attach-closing');
+    attachPanel.addEventListener('animationend', () => {
+      attachPanel?.remove();
+      attachPanel = null;
+    }, { once: true });
+    overlay?.remove();
+  }
+
+  function openAttachPanel() {
+    const overlay = document.createElement('div');
+    overlay.className = 'attach-overlay';
+    overlay.onclick = () => closeAttachPanel();
+    document.body.appendChild(overlay);
+
+    attachPanel = document.createElement('div');
+    attachPanel.className = 'attach-panel';
+    attachPanel.innerHTML = `
+      <div class="attach-sheet">
+        <div class="attach-handle"></div>
+        <button class="attach-option" id="attach-video">
+          <div class="attach-option-icon" style="background:linear-gradient(135deg,#8E24AA,#6A1B9A)">
+            <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+          </div>
+          <span class="attach-option-label">${t('attachVideo')}</span>
+        </button>
+        <button class="attach-option" id="attach-doc">
+          <div class="attach-option-icon" style="background:linear-gradient(135deg,#1E88E5,#1565C0)">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
+          </div>
+          <span class="attach-option-label">${t('attachFile')}</span>
+        </button>
+        <button class="attach-cancel" id="attach-cancel-btn">${t('cancel')}</button>
+      </div>
+    `;
+    document.body.appendChild(attachPanel);
+
+    attachPanel.querySelector('#attach-video').onclick = () => {
+      closeAttachPanel();
+      videoInput.click();
+    };
+    attachPanel.querySelector('#attach-doc').onclick = () => {
+      closeAttachPanel();
+      docInput.click();
+    };
+    attachPanel.querySelector('#attach-cancel-btn').onclick = () => closeAttachPanel();
+  }
 
   // Voice recording
   let mediaRec, recChunks = [], recStart, voiceOverlay = null;
@@ -748,14 +929,18 @@ export async function renderChat(root, chat) {
     if (chat.type === 'group') {
       // Group messages are plain text
       text = msg.ciphertext || '';
-      if (['image', 'voice', 'file', 'sticker'].includes(msg.msg_type)) extra = { url: text };
+      if (['image', 'voice', 'file', 'sticker', 'video'].includes(msg.msg_type)) {
+        extra = extractMediaExtra(text, msg.msg_type);
+      }
       extra.senderName = msg.from_nickname || '?';
       extra.senderAvatar = msg.from_avatar || null;
     } else if (chat.type === 'private' && msg.header && msg.ciphertext) {
       const plain = await tryDecrypt(msg.ciphertext, msg.header);
       if (plain !== null) {
         text = plain;
-        if (['image', 'voice', 'file', 'sticker'].includes(msg.msg_type)) extra = { url: text };
+        if (['image', 'voice', 'file', 'sticker', 'video'].includes(msg.msg_type)) {
+          extra = extractMediaExtra(text, msg.msg_type);
+        }
       } else {
         text = t('encryptedMsg');
       }
@@ -809,6 +994,8 @@ export async function renderChat(root, chat) {
     clearTimeout(typingTimer);
     voiceOverlay?.remove();
     if (emojiPanel) { emojiPanel.remove(); emojiPanel = null; }
+    if (attachPanel) { attachPanel.remove(); attachPanel = null; }
+    document.querySelector('.attach-overlay')?.remove();
     document.removeEventListener('mouseup', stopVoice);
     document.removeEventListener('touchend', stopVoice);
   };

@@ -22,7 +22,7 @@ A WeChat-style end-to-end encrypted instant messaging app with stateless ECDH + 
 | 🔔 Push Notifications | Web Push (VAPID) + OneSignal dual-channel  — reach users even when offline |
 | 🌐 Multi-Language | Chinese, English, Japanese, Korean, French, German, Russian, Spanish — auto-detect + manual switch |
 | 📱 iOS — No Enterprise Cert | PWA via Safari "Add to Home Screen", works permanently without Apple signing |
-| 💬 Rich Messaging | Text, images, voice messages, 200+ emoji panel (8 categories), Telegram sticker packs, delivery receipts, typing indicators |
+| 💬 Rich Messaging | Text, images, video, document files (PDF/DOCX/XLSX etc. with type icons), voice messages, 200+ emoji panel (8 categories), Telegram sticker packs, delivery receipts, typing indicators |
 | 🌐 Moments | WeChat-style social feed: text + up to 9 photos or 1 video (≤ 10 min), likes (friend avatars), comments, tag-based visibility control |
 | 🏷️ Friend Tags | Assign multiple tags to friends (12-color preset palette), filter contacts by tag |
 | 🗂️ R2 Object Storage | Cloudflare R2 for image/voice files — optional public CDN URL |
