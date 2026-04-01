@@ -27,6 +27,7 @@ spec:
     - 📹 **Video & Voice Calls** — WebRTC P2P (1:1) + Mesh (group up to 6)
     - 👥 **Group Chat** — up to 2000 members, plain-text messaging, Do Not Disturb mode, member management
     - 🌐 **Moments** — social feed with text + up to 9 photos or 1 video (≤ 10 min), likes, comments, tag-based visibility
+    - 👤 **User Profile** — contact profile page with Moments feed, bidirectional privacy controls (hide their / hide mine)
     - ⏱️ **Auto-Delete Messages** — 5 tiers: never / 1 day / 3 days / 1 week / 1 month
     - 🔔 **Push Notifications** — Web Push (VAPID) + OneSignal dual-channel
     - 🌐 **Multi-language** — Chinese, English, Japanese, Korean, French, German, Russian, Spanish
@@ -449,6 +450,7 @@ localization:
       - 📹 **视频/语音通话** — WebRTC P2P（1:1）+ Mesh 多人（≤6 人）
       - 👥 **群聊** — 最多 2000 人群组，纯文本消息，免打扰模式，成员管理
       - 🌐 **朋友圈** — 文字 + 最多 9 张图或 1 个视频（≤10 分钟），点赞、评论、标签可见性控制
+      - 👤 **个人资料** — 联系人资料页（朋友圈动态 +「不看此人朋友圈」与「不让他看我的朋友圈」双向隐私控制）
       - ⏱️ **消息自动删除** — 5 档可选（永不/1天/3天/1周/1月）
       - 🔔 **消息推送** — Web Push (VAPID) + OneSignal 双通道
       - 🌐 **多语言** — 中文、英文、日语、韩语、法语、德语、俄语、西班牙语

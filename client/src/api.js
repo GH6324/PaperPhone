@@ -89,6 +89,9 @@ export const api = {
   likeMoment:       (id)     => req('POST', `/api/moments/${id}/like`),
   addComment:       (id, text) => req('POST', `/api/moments/${id}/comments`, { text }),
   deleteComment:    (mid, cid) => req('DELETE', `/api/moments/${mid}/comments/${cid}`),
+  userMoments:      (uid, before) => req('GET', `/api/moments/user/${uid}${before ? `?before=${before}` : ''}`),
+  getMomentPrivacy: (uid) => req('GET', `/api/moments/privacy/${uid}`),
+  setMomentPrivacy: (uid, d) => req('PUT', `/api/moments/privacy/${uid}`, d),
 
   // Friend Tags
   tags:            ()         => req('GET',    '/api/tags'),

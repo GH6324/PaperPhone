@@ -2,6 +2,7 @@
  * Contacts page — with tag filtering and tag management
  */
 import { state, openChat, avatarEl, showToast } from '../app.js';
+import { renderUserProfile } from './userProfile.js';
 import { api } from '../api.js';
 import { t } from '../i18n.js';
 import { openTagManager, openFriendTagPicker } from '../components/tagManager.js';
@@ -193,7 +194,14 @@ export function renderContacts(root) {
       };
       item.appendChild(tagBtn);
 
-      item.onclick = () => openChat({ id: f.id, type: 'private', name: f.nickname || f.username, avatar: f.avatar });
+      item.onclick = () => {
+        const appEl = document.getElementById('app');
+        const page = document.createElement('div');
+        page.className = 'page';
+        renderUserProfile(page, f);
+        appEl.innerHTML = '';
+        appEl.appendChild(page);
+      };
       listEl.appendChild(item);
     });
   }

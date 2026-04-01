@@ -316,3 +316,14 @@ CREATE TABLE IF NOT EXISTS user_totp (
   created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ── Moment Privacy (user-level moments visibility) ──────────────────────
+CREATE TABLE IF NOT EXISTS moment_privacy (
+  user_id     VARCHAR(36)   NOT NULL,
+  target_id   VARCHAR(36)   NOT NULL,
+  hide_their  TINYINT(1)    NOT NULL DEFAULT 0,
+  hide_mine   TINYINT(1)    NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, target_id),
+  FOREIGN KEY (user_id)   REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (target_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

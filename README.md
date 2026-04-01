@@ -25,6 +25,7 @@
 | 📱 iOS 永久免签 | PWA H5 → Safari「添加到主屏幕」，无需企业证书 |
 | 💬 消息功能 | 文字、图片、视频、文档文件（PDF/DOCX/XLSX 等带类型图标）、语音消息、Emoji 面板（200+，8 分类）、Telegram 贴纸包、已读状态 |
 | 🌐 朋友圈 | 发动态（文字+最多9张图或1个视频≤10分钟）、点赞（显示好友头像）、评论、标签可见性控制 |
+| 👤 个人资料 | 联系人资料页（头像/昵称/朋友圈动态），支持「不看此人朋友圈」与「不让他看我的朋友圈」双向隐私控制 |
 | 🏷️ 好友标签 | 为好友设置多个标签（12色预设调色板），按标签分类筛选通讯录 |
 | 🗂️ R2 对象存储 | Cloudflare R2 存储图片/语音，可选公开 CDN 直链 |
 | 🔑 两步验证 (2FA) | Google Authenticator 兼容 TOTP 验证，8 个一次性恢复码，登录时强制验证 |
@@ -271,7 +272,7 @@ paperphone/
 │       │   ├── messages.js     # 历史消息（密文分页）
 │       │   ├── upload.js       # Cloudflare R2 文件上传
 │       │   ├── files.js        # 文件代理（R2_PUBLIC_URL 未设时）
-│       │   ├── moments.js      # 朋友圈（动态/点赞/评论）
+│       │   ├── moments.js      # 朋友圈（动态/点赞/评论/用户级隐私）
 │       │   ├── calls.js        # TURN 凭据派发
 │       │   ├── push.js         # 推送订阅管理（Web Push + OneSignal）
 │       │   ├── stickers.js     # Telegram 贴纸包代理（缓存）
@@ -307,14 +308,18 @@ paperphone/
         │   ├── contacts.js     # 通讯录（好友申请/在线状态）
         │   ├── discover.js     # 发现页
         │   ├── profile.js      # 我的/设置（语言、指纹、通知、PWA）
+        │   ├── userProfile.js   # 联系人资料页（朋友圈动态 + 隐私开关）
         │   └── call.js         # 通话 UI（来电/通话中/多人视频）
+        └── components/
+            ├── tagManager.js   # 标签管理组件
+            └── momentCard.js   # 朋友圈卡片组件（可复用）
 ```
 
 ---
 
 ## 数据库结构
 
-共 13 张表，首次启动自动创建（`CREATE TABLE IF NOT EXISTS`）：
+共 14 张表，首次启动自动创建（`CREATE TABLE IF NOT EXISTS`）：
 
 | 表名 | 说明 |
 |------|------|
@@ -331,6 +336,7 @@ paperphone/
 | `push_subscriptions` | Web Push 推送订阅（VAPID） |
 | `onesignal_players` | OneSignal 设备注册（Median.co） |
 | `user_totp` | TOTP 两步验证密钥与恢复码 |
+| `moment_privacy` | 朋友圈用户级隐私设置（不看/不让看） |
 
 ---
 

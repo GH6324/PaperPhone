@@ -87,6 +87,18 @@ async function initMomentsTables() {
       FOREIGN KEY (moment_id) REFERENCES moments(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  // Moment privacy table (user-level hide their / hide mine)
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS moment_privacy (
+      user_id     VARCHAR(36)   NOT NULL,
+      target_id   VARCHAR(36)   NOT NULL,
+      hide_their  TINYINT(1)    NOT NULL DEFAULT 0,
+      hide_mine   TINYINT(1)    NOT NULL DEFAULT 0,
+      PRIMARY KEY (user_id, target_id),
+      FOREIGN KEY (user_id)   REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (target_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
   // Idempotent migration: add visibility column
   try {
     await db.query(`
@@ -258,6 +270,15 @@ router.get('/', async (req, res, next) => {
     const before = req.query.before ? new Date(req.query.before) : null;
     const viewerId = req.user.id;
 
+    // Privacy: get users I chose to hide, and users who hide me
+    const [privacyRows] = await db.query(
+      `SELECT target_id AS uid, 'hide_their' AS reason FROM moment_privacy WHERE user_id = ? AND hide_their = 1
+       UNION
+       SELECT user_id AS uid, 'hide_mine' AS reason FROM moment_privacy WHERE target_id = ? AND hide_mine = 1`,
+      [viewerId, viewerId]
+    );
+    const hiddenUserIds = new Set(privacyRows.map(r => r.uid));
+
     // Feed = own moments + friends' moments (with visibility filtering)
     // Step 1: Get candidate moments (own + friends)
     const [rows] = await db.query(
@@ -288,6 +309,9 @@ router.get('/', async (req, res, next) => {
         filtered.push(m);
         continue;
       }
+
+      // Skip if user-level privacy applies
+      if (hiddenUserIds.has(m.user_id)) continue;
 
       if (m.visibility === 'public') {
         filtered.push(m);
@@ -339,6 +363,116 @@ router.get('/', async (req, res, next) => {
           }
         }
         if (!blocked) filtered.push(m);
+      }
+    }
+
+    const enriched = await enrichMoments(filtered, viewerId);
+    res.json(enriched);
+  } catch (err) { next(err); }
+});
+
+// ── GET /api/moments/privacy/:userId ──────────────────────────────────────
+router.get('/privacy/:userId', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const [rows] = await db.query(
+      'SELECT hide_their, hide_mine FROM moment_privacy WHERE user_id = ? AND target_id = ?',
+      [req.user.id, req.params.userId]
+    );
+    if (rows.length) {
+      res.json({ hide_their: !!rows[0].hide_their, hide_mine: !!rows[0].hide_mine });
+    } else {
+      res.json({ hide_their: false, hide_mine: false });
+    }
+  } catch (err) { next(err); }
+});
+
+// ── PUT /api/moments/privacy/:userId ──────────────────────────────────────
+router.put('/privacy/:userId', async (req, res, next) => {
+  try {
+    const { hide_their, hide_mine } = req.body;
+    const db = getDb();
+    await db.query(
+      `INSERT INTO moment_privacy (user_id, target_id, hide_their, hide_mine)
+       VALUES (?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE hide_their = VALUES(hide_their), hide_mine = VALUES(hide_mine)`,
+      [req.user.id, req.params.userId, hide_their ? 1 : 0, hide_mine ? 1 : 0]
+    );
+    res.json({ ok: true, hide_their: !!hide_their, hide_mine: !!hide_mine });
+  } catch (err) { next(err); }
+});
+
+// ── GET /api/moments/user/:userId — a specific user's moments ─────────────
+router.get('/user/:userId', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const limit = Math.min(parseInt(req.query.limit) || 20, 50);
+    const before = req.query.before ? new Date(req.query.before) : null;
+    const viewerId = req.user.id;
+    const targetUserId = req.params.userId;
+
+    // Check privacy: if I chose to hide their moments, or they chose to hide mine
+    const [privCheck] = await db.query(
+      `SELECT
+        (SELECT hide_their FROM moment_privacy WHERE user_id = ? AND target_id = ?) AS i_hide_them,
+        (SELECT hide_mine  FROM moment_privacy WHERE user_id = ? AND target_id = ?) AS they_hide_me`,
+      [viewerId, targetUserId, targetUserId, viewerId]
+    );
+    const blocked = privCheck[0]?.i_hide_them || privCheck[0]?.they_hide_me;
+    if (blocked && targetUserId !== viewerId) {
+      return res.json([]);
+    }
+
+    const [rows] = await db.query(
+      `SELECT m.id, m.user_id, m.text_content, m.visibility, m.created_at,
+              u.nickname, u.username, u.avatar
+       FROM moments m
+       JOIN users u ON u.id = m.user_id
+       WHERE m.user_id = ?
+       ${before ? 'AND m.created_at < ?' : ''}
+       ORDER BY m.created_at DESC
+       LIMIT ?`,
+      before ? [targetUserId, before, limit] : [targetUserId, limit]
+    );
+
+    // Filter by per-post visibility (unless viewing own moments)
+    const filtered = [];
+    for (const m of rows) {
+      if (m.user_id === viewerId) { filtered.push(m); continue; }
+      if (m.visibility === 'public') { filtered.push(m); continue; }
+
+      const [rules] = await db.query(
+        'SELECT type, target_type, target_id FROM moment_visibility WHERE moment_id = ?',
+        [m.id]
+      );
+      if (m.visibility === 'whitelist') {
+        let allowed = false;
+        for (const rule of rules) {
+          if (rule.target_type === 'user' && rule.target_id === viewerId) { allowed = true; break; }
+          if (rule.target_type === 'tag') {
+            const [tc] = await db.query(
+              `SELECT 1 FROM friend_tag_assignments a JOIN friend_tags t ON t.id = a.tag_id
+               WHERE a.tag_id = ? AND a.friend_id = ? AND t.user_id = ?`,
+              [rule.target_id, viewerId, m.user_id]
+            );
+            if (tc.length) { allowed = true; break; }
+          }
+        }
+        if (allowed) filtered.push(m);
+      } else if (m.visibility === 'blacklist') {
+        let hidden = false;
+        for (const rule of rules) {
+          if (rule.target_type === 'user' && rule.target_id === viewerId) { hidden = true; break; }
+          if (rule.target_type === 'tag') {
+            const [tc] = await db.query(
+              `SELECT 1 FROM friend_tag_assignments a JOIN friend_tags t ON t.id = a.tag_id
+               WHERE a.tag_id = ? AND a.friend_id = ? AND t.user_id = ?`,
+              [rule.target_id, viewerId, m.user_id]
+            );
+            if (tc.length) { hidden = true; break; }
+          }
+        }
+        if (!hidden) filtered.push(m);
       }
     }
 

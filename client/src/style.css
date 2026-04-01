@@ -3380,3 +3380,260 @@ html, body {
 .topbar-back:active {
   transform: scale(0.9);
 }
+
+/* ── User Profile Page ────────────────────────────────────── */
+.page-user-profile {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg);
+}
+.user-profile-topbar {
+  position: sticky; top: 0; z-index: 10;
+}
+.user-profile-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 40px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hero Card */
+.user-profile-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 20px 24px;
+  padding-top: calc(var(--topbar-h) + 24px);
+  background: var(--surface);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border-bottom: 0.5px solid var(--glass-border);
+  box-shadow: var(--glass-specular), var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+.user-profile-hero::before {
+  content: '';
+  position: absolute;
+  top: -60%; left: -30%;
+  width: 160%; height: 120%;
+  background: radial-gradient(ellipse at center, rgba(7,193,96,.08) 0%, transparent 60%);
+  pointer-events: none;
+}
+.user-profile-avatar-wrap {
+  position: relative;
+  margin-bottom: 16px;
+  z-index: 1;
+}
+.user-profile-avatar {
+  width: 88px !important;
+  height: 88px !important;
+  border-radius: 24px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.06);
+  font-size: 36px !important;
+  border: 3px solid var(--surface);
+}
+.user-profile-online-dot {
+  position: absolute;
+  bottom: 4px; right: 4px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--green);
+  border: 3px solid var(--surface);
+  box-shadow: 0 0 8px var(--green-glow);
+}
+.user-profile-info {
+  text-align: center;
+  z-index: 1;
+}
+.user-profile-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.5px;
+  margin-bottom: 4px;
+}
+.user-profile-username {
+  font-size: 14px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.user-profile-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 12px;
+  border-radius: var(--radius-pill);
+}
+.user-profile-status-online {
+  background: rgba(7,193,96,.12);
+  color: var(--green);
+}
+
+/* Action Buttons */
+.user-profile-actions {
+  display: flex;
+  gap: 12px;
+  padding: 20px 20px 0;
+  justify-content: center;
+}
+.user-profile-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 0.5px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 14px 20px;
+  min-width: 80px;
+  cursor: pointer;
+  box-shadow: var(--glass-specular), var(--shadow-sm);
+  transition: transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .2s ease, background .15s ease;
+}
+.user-profile-action-btn:active {
+  transform: scale(0.93);
+  box-shadow: var(--shadow-sm);
+}
+.user-profile-action-icon {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0BD46A, #07C160);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 3px 12px var(--green-glow), inset 0 1px 0 rgba(255,255,255,.2);
+}
+.user-profile-action-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+/* Privacy Settings Card */
+.user-profile-card {
+  margin: 16px 16px 0;
+  padding: 0;
+  border-radius: var(--radius);
+  background: var(--surface);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 0.5px solid var(--glass-border);
+  box-shadow: var(--glass-specular), var(--shadow-sm);
+  overflow: hidden;
+}
+.user-profile-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 14px 16px 8px;
+}
+
+/* Toggle Row */
+.up-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 16px;
+  gap: 12px;
+  transition: background .15s ease;
+}
+.up-toggle-row + .up-toggle-row {
+  border-top: 0.5px solid var(--divider);
+}
+.up-toggle-info {
+  flex: 1;
+  min-width: 0;
+}
+.up-toggle-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.3;
+}
+.up-toggle-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+/* iOS-style Toggle Switch */
+.up-toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 30px;
+  flex-shrink: 0;
+}
+.up-toggle-input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+.up-toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: var(--surface-2);
+  border: 0.5px solid var(--glass-border-b);
+  border-radius: 30px;
+  transition: background .3s cubic-bezier(.4,0,.2,1), border-color .3s, box-shadow .3s;
+}
+.up-toggle-slider::before {
+  content: '';
+  position: absolute;
+  height: 26px;
+  width: 26px;
+  left: 2px;
+  bottom: 1.5px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15), 0 0.5px 1px rgba(0,0,0,.1);
+  transition: transform .3s cubic-bezier(.4,0,.2,1);
+}
+.up-toggle-input:checked + .up-toggle-slider {
+  background: var(--green);
+  border-color: var(--green);
+  box-shadow: 0 2px 8px var(--green-glow);
+}
+.up-toggle-input:checked + .up-toggle-slider::before {
+  transform: translateX(20px);
+}
+
+/* Section Header */
+.user-profile-section-header {
+  display: flex;
+  align-items: center;
+  padding: 20px 20px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.2px;
+}
+
+/* Moments Feed in Profile */
+.user-profile-moments-feed {
+  padding: 0 4px;
+}
+.user-profile-moments-feed .moment-card {
+  margin: 6px 12px;
+}
+.user-profile-moments-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}

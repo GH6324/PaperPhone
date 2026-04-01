@@ -24,6 +24,7 @@ A WeChat-style end-to-end encrypted instant messaging app with stateless ECDH + 
 | 📱 iOS — No Enterprise Cert | PWA via Safari "Add to Home Screen", works permanently without Apple signing |
 | 💬 Rich Messaging | Text, images, video, document files (PDF/DOCX/XLSX etc. with type icons), voice messages, 200+ emoji panel (8 categories), Telegram sticker packs, delivery receipts, typing indicators |
 | 🌐 Moments | WeChat-style social feed: text + up to 9 photos or 1 video (≤ 10 min), likes (friend avatars), comments, tag-based visibility control |
+| 👤 User Profile | Contact profile page (avatar / nickname / Moments feed), with "Hide their Moments" and "Hide my Moments from them" bidirectional privacy controls |
 | 🏷️ Friend Tags | Assign multiple tags to friends (12-color preset palette), filter contacts by tag |
 | 🗂️ R2 Object Storage | Cloudflare R2 for image/voice files — optional public CDN URL |
 | 🔑 Two-Factor Auth (2FA) | Google Authenticator–compatible TOTP, 8 one-time recovery codes, enforced at login |
@@ -270,7 +271,7 @@ paperphone/
 │       │   ├── messages.js     # Historical messages (paginated ciphertext)
 │       │   ├── upload.js       # Cloudflare R2 file upload
 │       │   ├── files.js        # File proxy (when R2_PUBLIC_URL is not set)
-│       │   ├── moments.js      # Moments feed (posts / likes / comments)
+│       │   ├── moments.js      # Moments feed (posts / likes / comments / user-level privacy)
 │       │   ├── calls.js        # TURN credential issuance
 │       │   ├── push.js         # Push subscription mgmt (Web Push + OneSignal)
 │       │   ├── stickers.js     # Telegram sticker pack proxy (cached)
@@ -306,14 +307,18 @@ paperphone/
         │   ├── contacts.js     # Contacts (friend requests, online status)
         │   ├── discover.js     # Discover page
         │   ├── profile.js      # Me / Settings (language, fingerprint, notifications, PWA)
+        │   ├── userProfile.js   # Contact profile (Moments feed + privacy toggles)
         │   └── call.js         # Call UI (incoming / active / multi-party video)
+        └── components/
+            ├── tagManager.js   # Tag management component
+            └── momentCard.js   # Reusable Moment card component
 ```
 
 ---
 
 ## Database Schema
 
-13 tables, auto-created on first server startup (`CREATE TABLE IF NOT EXISTS`):
+14 tables, auto-created on first server startup (`CREATE TABLE IF NOT EXISTS`):
 
 | Table | Purpose |
 |-------|---------|
@@ -330,6 +335,7 @@ paperphone/
 | `push_subscriptions` | Web Push subscriptions (VAPID) |
 | `onesignal_players` | OneSignal device registrations (Median.co) |
 | `user_totp` | TOTP two-factor auth secrets & recovery codes |
+| `moment_privacy` | User-level Moments privacy settings (hide their / hide mine) |
 
 ---
 
