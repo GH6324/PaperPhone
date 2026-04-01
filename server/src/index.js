@@ -8,6 +8,7 @@ const { connectDb, getDb } = require('./db/mysql');
 const { connectRedis }     = require('./db/redis');
 const { initMomentsTables } = require('./routes/moments');
 const { initTagTables }      = require('./routes/tags');
+const { initTimelineTables } = require('./routes/timeline');
 
 const PORT = process.env.PORT || 3000;
 
@@ -32,6 +33,7 @@ async function main() {
   await initSchema();
   await initMomentsTables();
   await initTagTables();
+  await initTimelineTables();
   await connectRedis();
 
   const server = http.createServer(app);

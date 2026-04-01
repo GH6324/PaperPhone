@@ -26,6 +26,7 @@
 | 💬 消息功能 | 文字、图片、视频、文档文件（PDF/DOCX/XLSX 等带类型图标）、语音消息、Emoji 面板（200+，8 分类）、Telegram 贴纸包、已读状态 |
 | 🌐 朋友圈 | 发动态（文字+最多9张图或1个视频≤10分钟）、点赞（显示好友头像）、评论、标签可见性控制 |
 | 👤 个人资料 | 联系人资料页（头像/昵称/朋友圈动态），支持「不看此人朋友圈」与「不让他看我的朋友圈」双向隐私控制 |
+| 📰 时间线 | 小红书风格公开发帖区——双列瀑布流布局，图片/视频+文字（最多50个媒体、2000字），支持匿名发帖、点赞、评论 |
 | 🏷️ 好友标签 | 为好友设置多个标签（12色预设调色板），按标签分类筛选通讯录 |
 | 🗂️ R2 对象存储 | Cloudflare R2 存储图片/语音，可选公开 CDN 直链 |
 | 🔑 两步验证 (2FA) | Google Authenticator 兼容 TOTP 验证，8 个一次性恢复码，登录时强制验证 |
@@ -273,6 +274,7 @@ paperphone/
 │       │   ├── upload.js       # Cloudflare R2 文件上传
 │       │   ├── files.js        # 文件代理（R2_PUBLIC_URL 未设时）
 │       │   ├── moments.js      # 朋友圈（动态/点赞/评论/用户级隐私）
+│       │   ├── timeline.js     # 时间线（公开发帖/点赞/评论/匿名）
 │       │   ├── calls.js        # TURN 凭据派发
 │       │   ├── push.js         # 推送订阅管理（Web Push + OneSignal）
 │       │   ├── stickers.js     # Telegram 贴纸包代理（缓存）
@@ -313,13 +315,16 @@ paperphone/
         └── components/
             ├── tagManager.js   # 标签管理组件
             └── momentCard.js   # 朋友圈卡片组件（可复用）
+        └── pages/
+            ...
+            ├── timeline.js     # 时间线（小红书风格瀑布流 + 发帖 + 详情）
 ```
 
 ---
 
 ## 数据库结构
 
-共 14 张表，首次启动自动创建（`CREATE TABLE IF NOT EXISTS`）：
+共 18 张表，首次启动自动创建（`CREATE TABLE IF NOT EXISTS`）：
 
 | 表名 | 说明 |
 |------|------|
@@ -337,6 +342,10 @@ paperphone/
 | `onesignal_players` | OneSignal 设备注册（Median.co） |
 | `user_totp` | TOTP 两步验证密钥与恢复码 |
 | `moment_privacy` | 朋友圈用户级隐私设置（不看/不让看） |
+| `timeline_posts` | 时间线帖子（文字 ≤2000 字，支持匿名） |
+| `timeline_media` | 时间线媒体（图片/视频，每帖最多 50 个） |
+| `timeline_likes` | 时间线点赞 |
+| `timeline_comments` | 时间线评论（支持匿名） |
 
 ---
 

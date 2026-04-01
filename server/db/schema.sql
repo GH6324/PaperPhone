@@ -327,3 +327,48 @@ CREATE TABLE IF NOT EXISTS moment_privacy (
   FOREIGN KEY (user_id)   REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (target_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ── Timeline (public posts, Xiaohongshu-style) ──────────────────────────
+CREATE TABLE IF NOT EXISTS timeline_posts (
+  id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id       VARCHAR(36)     NOT NULL,
+  text_content  VARCHAR(2000)   NOT NULL DEFAULT '',
+  is_anonymous  TINYINT(1)      NOT NULL DEFAULT 0,
+  created_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_tl_created (created_at),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS timeline_media (
+  id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  post_id     BIGINT UNSIGNED NOT NULL,
+  url         TEXT            NOT NULL,
+  media_type  ENUM('image','video') NOT NULL DEFAULT 'image',
+  thumbnail   TEXT            DEFAULT NULL,
+  duration    SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  sort_order  TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  INDEX idx_tl_media_post (post_id),
+  FOREIGN KEY (post_id) REFERENCES timeline_posts(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS timeline_likes (
+  id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  post_id     BIGINT UNSIGNED NOT NULL,
+  user_id     VARCHAR(36)     NOT NULL,
+  created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_tl_like (post_id, user_id),
+  FOREIGN KEY (post_id) REFERENCES timeline_posts(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS timeline_comments (
+  id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  post_id       BIGINT UNSIGNED NOT NULL,
+  user_id       VARCHAR(36)     NOT NULL,
+  is_anonymous  TINYINT(1)      NOT NULL DEFAULT 0,
+  text_content  VARCHAR(512)    NOT NULL,
+  created_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_tl_comment_post (post_id),
+  FOREIGN KEY (post_id) REFERENCES timeline_posts(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

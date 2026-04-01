@@ -26,6 +26,7 @@ Una aplicación de mensajería instantánea cifrada de extremo a extremo estilo 
 | 💬 Mensajería rica | Texto, imágenes, video, archivos (PDF/DOCX/XLSX etc. con iconos de tipo), mensajes de voz, 200+ emojis (8 categorías), packs de stickers Telegram, confirmaciones de lectura |
 | 🌐 Momentos | Feed social: texto + hasta 9 fotos o 1 vídeo (≤ 10 min), likes (avatares de amigos), comentarios, visibilidad por etiquetas |
 | 👤 Perfil de usuario | Página de perfil (avatar / apodo / feed de Momentos), con controles de privacidad bidireccionales «Ocultar sus momentos» y «Ocultar mis momentos» |
+| 📰 Cronología | Feed público estilo Xiaohongshu — diseño masonry 2 columnas, imágenes/vídeos + texto (máx. 50 archivos, 2000 car.), publicación anónima, likes y comentarios |
 | 🏷️ Etiquetas de amigos | Múltiples etiquetas por amigo (paleta de 12 colores), filtrar contactos por etiqueta |
 | 🗂️ Almacenamiento R2 | Cloudflare R2 para imágenes/audio — URL CDN opcional |
 | 🔑 Auth de dos factores (2FA) | TOTP compatible con Google Authenticator, 8 códigos de recuperación, verificación obligatoria al iniciar sesión |
@@ -141,7 +142,7 @@ El servidor ve: ✅ texto cifrado + metadatos de enrutamiento  ❌ texto plano /
 
 ## Esquema de base de datos
 
-14 tablas, creadas automáticamente en el primer inicio:
+18 tablas, creadas automáticamente en el primer inicio:
 
 | Tabla | Propósito |
 |-------|-----------|
@@ -157,6 +158,10 @@ El servidor ve: ✅ texto cifrado + metadatos de enrutamiento  ❌ texto plano /
 | `onesignal_players` | Dispositivos OneSignal |
 | `user_totp` | Secretos TOTP 2FA y códigos de recuperación |
 | `moment_privacy` | Configuración de privacidad de momentos a nivel de usuario (ocultar/no mostrar) |
+| `timeline_posts` | Publicaciones de cronología (texto ≤2000 car., anónimo opcional) |
+| `timeline_media` | Medios de cronología (imágenes/vídeos, máx. 50 por post) |
+| `timeline_likes` | Likes de cronología |
+| `timeline_comments` | Comentarios de cronología (anónimo opcional) |
 
 ---
 

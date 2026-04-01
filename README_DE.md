@@ -26,6 +26,7 @@ Eine Instant-Messaging-App im WeChat-Stil mit Ende-zu-Ende-Verschlüsselung übe
 | 💬 Rich Messaging | Text, Bilder, Video, Dokumentdateien (PDF/DOCX/XLSX usw. mit Typ-Icons), Sprachnachrichten, 200+ Emoji-Panel (8 Kategorien), Telegram-Stickerpakete, Lesebestätigungen |
 | 🌐 Momente | Sozialer Feed: Text + bis zu 9 Fotos oder 1 Video (≤ 10 Min.), Likes (Freunde-Avatare), Kommentare, Tag-basierte Sichtbarkeit |
 | 👤 Benutzerprofil | Kontaktprofil (Avatar/Nickname/Momente-Feed), mit bidirektionalen Datenschutzkontrollen „Deren Momente ausblenden“ und „Meine Momente verbergen“ |
+| 📰 Zeitachse | Öffentlicher Feed im Xiaohongshu-Stil — 2-Spalten-Masonry-Layout, Bilder/Videos + Text (max. 50 Medien, 2000 Zeichen), anonymes Posten, Likes & Kommentare |
 | 🏷️ Freunde-Tags | Mehrere Tags pro Freund (12-Farben-Palette), Kontakte nach Tags filtern |
 | 🗂️ R2-Speicher | Cloudflare R2 für Bild-/Audiodateien — optionale CDN-URL |
 | 🔑 Zwei-Faktor-Auth (2FA) | Google Authenticator–kompatibles TOTP, 8 einmalige Wiederherstellungscodes, Pflichtprüfung bei Anmeldung |
@@ -141,7 +142,7 @@ Server sieht: ✅ Chiffretext + Routing-Metadaten  ❌ Klartext / private Schlü
 
 ## Datenbankschema
 
-14 Tabellen, automatisch beim ersten Start erstellt:
+18 Tabellen, automatisch beim ersten Start erstellt:
 
 | Tabelle | Zweck |
 |---------|-------|
@@ -157,6 +158,10 @@ Server sieht: ✅ Chiffretext + Routing-Metadaten  ❌ Klartext / private Schlü
 | `onesignal_players` | OneSignal-Geräte (Median.co) |
 | `user_totp` | TOTP-Zwei-Faktor-Authentifizierungsschlüssel und Wiederherstellungscodes |
 | `moment_privacy` | Momente-Benutzer-Datenschutzeinstellungen (ausblenden/verbergen) |
+| `timeline_posts` | Zeitachse-Beiträge (Text ≤2000 Zeichen, anonym möglich) |
+| `timeline_media` | Zeitachse-Medien (Bilder/Videos, max. 50 pro Beitrag) |
+| `timeline_likes` | Zeitachse-Likes |
+| `timeline_comments` | Zeitachse-Kommentare (anonym möglich) |
 
 ---
 

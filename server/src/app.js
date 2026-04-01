@@ -16,6 +16,7 @@ const sessionsRouter = require('./routes/sessions');
 const tagsRouter     = require('./routes/tags');
 const stickersRouter = require('./routes/stickers');
 const totpRouter     = require('./routes/totp');
+const timelineRouter = require('./routes/timeline');
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.use('/api/sessions', sessionsRouter);
 app.use('/api/tags',     tagsRouter);
 app.use('/api/stickers', stickersRouter);
 app.use('/api/totp',     totpRouter);
+app.use('/api/timeline', timelineRouter);
 
 // Serve client build (for production)
 app.use(express.static(path.join(__dirname, '../../client')));

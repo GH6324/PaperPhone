@@ -26,6 +26,7 @@ Une application de messagerie instantanée chiffrée de bout en bout, style WeCh
 | 💬 Messagerie riche | Texte, images, vidéo, fichiers (PDF/DOCX/XLSX etc. avec icônes de type), audio, 200+ émojis (8 catégories), packs de stickers Telegram, accusés de réception |
 | 🌐 Moments | Fil social : texte + 9 photos ou 1 vidéo (≤ 10 min), likes (avatars), commentaires, visibilité par tags |
 | 👤 Profil utilisateur | Page de profil (avatar / pseudo / fil Moments), avec contrôles de confidentialité bidirectionnels « Masquer ses moments » et « Masquer mes moments » |
+| 📰 Chronologie | Fil public style Xiaohongshu — grille maçonnerie 2 colonnes, images/vidéos + texte (max 50 médias, 2000 car.), publication anonyme, likes & commentaires |
 | 🏷️ Tags d'amis | Plusieurs tags par ami (12 couleurs), filtrage des contacts |
 | 🗂️ Stockage R2 | Cloudflare R2 pour images/audio — CDN optionnel |
 | 🔑 Auth à deux facteurs (2FA) | TOTP compatible Google Authenticator, 8 codes de récupération, vérification obligatoire à la connexion |

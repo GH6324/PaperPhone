@@ -25,6 +25,7 @@ A WeChat-style end-to-end encrypted instant messaging app with stateless ECDH + 
 | 💬 Rich Messaging | Text, images, video, document files (PDF/DOCX/XLSX etc. with type icons), voice messages, 200+ emoji panel (8 categories), Telegram sticker packs, delivery receipts, typing indicators |
 | 🌐 Moments | WeChat-style social feed: text + up to 9 photos or 1 video (≤ 10 min), likes (friend avatars), comments, tag-based visibility control |
 | 👤 User Profile | Contact profile page (avatar / nickname / Moments feed), with "Hide their Moments" and "Hide my Moments from them" bidirectional privacy controls |
+| 📰 Timeline | Xiaohongshu-style public feed — dual-column masonry layout, images/video + text (up to 50 media, 2000 chars), anonymous posting, likes & comments |
 | 🏷️ Friend Tags | Assign multiple tags to friends (12-color preset palette), filter contacts by tag |
 | 🗂️ R2 Object Storage | Cloudflare R2 for image/voice files — optional public CDN URL |
 | 🔑 Two-Factor Auth (2FA) | Google Authenticator–compatible TOTP, 8 one-time recovery codes, enforced at login |
@@ -272,6 +273,7 @@ paperphone/
 │       │   ├── upload.js       # Cloudflare R2 file upload
 │       │   ├── files.js        # File proxy (when R2_PUBLIC_URL is not set)
 │       │   ├── moments.js      # Moments feed (posts / likes / comments / user-level privacy)
+│       │   ├── timeline.js     # Timeline (public posts / likes / comments / anonymous)
 │       │   ├── calls.js        # TURN credential issuance
 │       │   ├── push.js         # Push subscription mgmt (Web Push + OneSignal)
 │       │   ├── stickers.js     # Telegram sticker pack proxy (cached)
@@ -318,7 +320,7 @@ paperphone/
 
 ## Database Schema
 
-14 tables, auto-created on first server startup (`CREATE TABLE IF NOT EXISTS`):
+18 tables, auto-created on first server startup (`CREATE TABLE IF NOT EXISTS`):
 
 | Table | Purpose |
 |-------|---------|
@@ -336,6 +338,10 @@ paperphone/
 | `onesignal_players` | OneSignal device registrations (Median.co) |
 | `user_totp` | TOTP two-factor auth secrets & recovery codes |
 | `moment_privacy` | User-level Moments privacy settings (hide their / hide mine) |
+| `timeline_posts` | Timeline posts (text ≤ 2000 chars, optional anonymous) |
+| `timeline_media` | Timeline media (images/videos, up to 50 per post) |
+| `timeline_likes` | Timeline likes |
+| `timeline_comments` | Timeline comments (optional anonymous) |
 
 ---
 

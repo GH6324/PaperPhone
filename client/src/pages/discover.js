@@ -4,6 +4,7 @@
 import { t } from '../i18n.js';
 import { state } from '../app.js';
 import { renderMoments } from './moments.js';
+import { renderTimeline } from './timeline.js';
 
 export function renderDiscover(root) {
   root.innerHTML = `
@@ -19,11 +20,19 @@ export function renderDiscover(root) {
           <span class="discover-label">${t('moments')}</span>
           <span class="discover-chevron"><i class="fi fi-rr-angle-right"></i></span>
         </div>
+        <div class="discover-item" id="timeline-item">
+          <div class="discover-icon" style="background:linear-gradient(135deg,#FF6B6B,#EE5A24)"><i class="fi fi-sr-time-past" style="color:#fff;font-size:18px"></i></div>
+          <span class="discover-label">${t('timeline')}</span>
+          <span class="discover-chevron"><i class="fi fi-rr-angle-right"></i></span>
+        </div>
       </div>
     </div>
   `;
 
   root.querySelector('#moments-item').addEventListener('click', () => {
     renderMoments(root);
+  });
+  root.querySelector('#timeline-item').addEventListener('click', () => {
+    renderTimeline(root);
   });
 }

@@ -93,6 +93,15 @@ export const api = {
   getMomentPrivacy: (uid) => req('GET', `/api/moments/privacy/${uid}`),
   setMomentPrivacy: (uid, d) => req('PUT', `/api/moments/privacy/${uid}`, d),
 
+  // Timeline (时间线)
+  timelineFeed:       (before) => req('GET', `/api/timeline${before ? `?before=${before}` : ''}`),
+  timelineDetail:     (id)     => req('GET', `/api/timeline/${id}`),
+  createTimelinePost: (d)      => req('POST', '/api/timeline', d),
+  deleteTimelinePost: (id)     => req('DELETE', `/api/timeline/${id}`),
+  likeTimelinePost:   (id)     => req('POST', `/api/timeline/${id}/like`),
+  addTimelineComment: (id, text, is_anonymous) => req('POST', `/api/timeline/${id}/comments`, { text, is_anonymous }),
+  deleteTimelineComment: (pid, cid) => req('DELETE', `/api/timeline/${pid}/comments/${cid}`),
+
   // Friend Tags
   tags:            ()         => req('GET',    '/api/tags'),
   createTag:       (d)        => req('POST',   '/api/tags', d),
