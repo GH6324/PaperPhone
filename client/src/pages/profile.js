@@ -50,6 +50,11 @@ export function renderProfile(root) {
           <span class="settings-value" id="cur-nickname">${esc(u.nickname || u.username)}</span>
           <span class="settings-chevron">›</span>
         </div>
+        <div class="settings-item" id="change-password">
+          <div class="settings-icon" style="background:#FF3B30"><svg viewBox="0 0 24 24" width="18" height="18" fill="#fff"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM9 8V6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9z"/></svg></div>
+          <span class="settings-label">${t('changePassword')}</span>
+          <span class="settings-chevron">›</span>
+        </div>
         <div class="settings-item" id="my-qrcode">
           <div class="settings-icon" style="background:#007AFF">${qrCodeIconSvg()}</div>
           <span class="settings-label">${t('myQRCode')}</span>
@@ -157,6 +162,9 @@ export function renderProfile(root) {
         } catch { showToast(t('updateFailed')); }
       }
     };
+
+    // Change password — open sub-page
+    root.querySelector('#change-password').onclick = () => openChangePasswordPage(buildPage);
 
     // Key fingerprint
     root.querySelector('#export-keys').onclick = async () => {
@@ -529,4 +537,105 @@ async function open2FAPage(onBack) {
   }
 
   render();
+}
+
+/**
+ * Full-page change password form
+ */
+function openChangePasswordPage(onBack) {
+  const appEl = document.getElementById('app');
+  const page = document.createElement('div');
+  page.className = 'page';
+
+  page.innerHTML = `
+    <div class="topbar">
+      <div class="topbar-back" id="cpw-back">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      </div>
+      <div class="topbar-title">${t('changePassword')}</div>
+      <div style="min-width:44px"></div>
+    </div>
+    <div style="padding:16px;padding-top:calc(var(--topbar-h) + 16px);max-width:420px;margin:0 auto">
+      <div class="totp-setup-intro" style="margin-bottom:24px">
+        <div class="totp-status-icon" style="color:var(--subtext)">
+          <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
+            <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM9 8V6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9z"/>
+          </svg>
+        </div>
+        <h3 style="margin:12px 0 8px;color:var(--text)">${t('changePasswordTitle')}</h3>
+        <p style="color:var(--subtext);font-size:14px;line-height:1.5">${t('changePasswordDesc')}</p>
+      </div>
+
+      <form id="cpw-form" autocomplete="off">
+        <div class="auth-field" style="margin-bottom:12px">
+          <input class="auth-input" id="cpw-old" type="password"
+            placeholder="${t('currentPassword')}" autocomplete="current-password">
+        </div>
+        <div class="auth-field" style="margin-bottom:12px">
+          <input class="auth-input" id="cpw-new" type="password"
+            placeholder="${t('newPassword')}" autocomplete="new-password">
+        </div>
+        <div class="auth-field" style="margin-bottom:12px">
+          <input class="auth-input" id="cpw-confirm" type="password"
+            placeholder="${t('confirmNewPassword')}" autocomplete="new-password">
+        </div>
+        <div class="auth-error" id="cpw-err"></div>
+        <button class="auth-btn" id="cpw-submit" type="submit" style="width:100%;margin-top:8px">${t('confirmChange')}</button>
+      </form>
+    </div>
+  `;
+
+  appEl.innerHTML = '';
+  appEl.appendChild(page);
+
+  page.querySelector('#cpw-back').onclick = () => {
+    const pg = document.createElement('div');
+    pg.className = 'page';
+    renderProfile(pg);
+    appEl.innerHTML = '';
+    appEl.appendChild(pg);
+  };
+
+  setTimeout(() => page.querySelector('#cpw-old')?.focus(), 100);
+
+  page.querySelector('#cpw-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const errEl = page.querySelector('#cpw-err');
+    const btn = page.querySelector('#cpw-submit');
+    const oldPw = page.querySelector('#cpw-old').value;
+    const newPw = page.querySelector('#cpw-new').value;
+    const confirmPw = page.querySelector('#cpw-confirm').value;
+    errEl.textContent = '';
+
+    if (!oldPw || !newPw || !confirmPw) {
+      errEl.textContent = t('fillAllFields');
+      return;
+    }
+    if (newPw.length < 6) {
+      errEl.textContent = t('passwordTooShort');
+      return;
+    }
+    if (newPw !== confirmPw) {
+      errEl.textContent = t('passwordMismatch');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = t('saving');
+
+    try {
+      await api.changePassword(oldPw, newPw);
+      showToast(t('passwordChanged'));
+      // Navigate back to profile
+      const pg = document.createElement('div');
+      pg.className = 'page';
+      renderProfile(pg);
+      appEl.innerHTML = '';
+      appEl.appendChild(pg);
+    } catch (err) {
+      errEl.textContent = err.message || t('opFailed');
+      btn.disabled = false;
+      btn.textContent = t('confirmChange');
+    }
+  };
 }

@@ -1,9 +1,35 @@
 const express = require('express');
+const bcrypt = require('bcryptjs');
 const { getDb } = require('../db/mysql');
 const { authMiddleware } = require('../middlewares/auth');
 
 const router = express.Router();
 router.use(authMiddleware);
+
+// POST /api/users/change-password
+router.post('/change-password', async (req, res, next) => {
+  try {
+    const { old_password, new_password } = req.body;
+    if (!old_password || !new_password) {
+      return res.status(400).json({ error: 'Missing fields' });
+    }
+    if (new_password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    const db = getDb();
+    const [rows] = await db.query('SELECT password FROM users WHERE id = ?', [req.user.id]);
+    if (!rows.length) return res.status(404).json({ error: 'User not found' });
+
+    const ok = await bcrypt.compare(old_password, rows[0].password);
+    if (!ok) return res.status(403).json({ error: 'Incorrect current password' });
+
+    const hash = await bcrypt.hash(new_password, 12);
+    await db.query('UPDATE users SET password = ? WHERE id = ?', [hash, req.user.id]);
+
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
 
 // GET /api/users/search?q=username
 router.get('/search', async (req, res, next) => {

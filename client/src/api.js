@@ -42,6 +42,7 @@ export const api = {
   // Users
   me:          ()  => req('GET',   '/api/users/me'),
   updateMe:    d   => req('PATCH', '/api/users/me', d),
+  changePassword: (old_password, new_password) => req('POST', '/api/users/change-password', { old_password, new_password }),
   search:      q   => req('GET',   `/api/users/search?q=${encodeURIComponent(q)}`),
   prekeys:     uid => req('GET',   `/api/users/${uid}/prekeys`),
   identityKey: uid => req('GET',   `/api/users/${uid}/ik`),
